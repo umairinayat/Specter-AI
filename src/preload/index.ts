@@ -1,0 +1,122 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import { IPC_CHANNELS } from '../shared/ipc-channels'
+
+export interface SpecterAPI {
+  // AI
+  queryAI: (query: string, includeScreen: boolean, includeAudio: boolean) => void
+  cancelAI: () => void
+  onStreamChunk: (callback: (chunk: string) => void) => () => void
+  onStreamDone: (callback: () => void) => () => void
+  onStreamError: (callback: (error: string) => void) => () => void
+
+  // Screen
+  captureScreen: () => Promise<{ text: string; screenshot?: string; timestamp: number }>
+
+  // Audio
+  startAudio: () => void
+  stopAudio: () => void
+  onTranscript: (callback: (text: string) => void) => () => void
+  onAudioStatus: (callback: (status: { isRecording: boolean; duration: number }) => void) => () => void
+
+  // Settings
+  getSetting: <T>(key: string) => Promise<T>
+  setSetting: (key: string, value: unknown) => Promise<void>
+  getAllSettings: () => Promise<Record<string, unknown>>
+
+  // Models
+  fetchModels: () => Promise<Array<{ id: string; name: string; pricing: { prompt: string; completion: string }; context_length: number }>>
+
+  // Hotkeys
+  onHotkeyAskAI: (callback: () => void) => () => void
+  onHotkeyScreenshot: (callback: () => void) => () => void
+  onHotkeyToggleAudio: (callback: () => void) => () => void
+  onHotkeyToggleOverlay: (callback: () => void) => () => void
+
+  // Dashboard
+  openDashboard: () => void
+
+  // App
+  getVersion: () => Promise<string>
+  quit: () => void
+}
+
+const api: SpecterAPI = {
+  // AI
+  queryAI: (query, includeScreen, includeAudio) => {
+    ipcRenderer.send(IPC_CHANNELS.AI_QUERY, { query, includeScreen, includeAudio })
+  },
+  cancelAI: () => {
+    ipcRenderer.send(IPC_CHANNELS.AI_CANCEL)
+  },
+  onStreamChunk: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, chunk: string) => callback(chunk)
+    ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AI_STREAM_CHUNK, handler)
+  },
+  onStreamDone: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.AI_STREAM_DONE, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AI_STREAM_DONE, handler)
+  },
+  onStreamError: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, error: string) => callback(error)
+    ipcRenderer.on(IPC_CHANNELS.AI_STREAM_ERROR, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AI_STREAM_ERROR, handler)
+  },
+
+  // Screen
+  captureScreen: () => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_CAPTURE),
+
+  // Audio
+  startAudio: () => ipcRenderer.send(IPC_CHANNELS.AUDIO_START),
+  stopAudio: () => ipcRenderer.send(IPC_CHANNELS.AUDIO_STOP),
+  onTranscript: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, text: string) => callback(text)
+    ipcRenderer.on(IPC_CHANNELS.AUDIO_TRANSCRIPT, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AUDIO_TRANSCRIPT, handler)
+  },
+  onAudioStatus: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, status: { isRecording: boolean; duration: number }) => callback(status)
+    ipcRenderer.on(IPC_CHANNELS.AUDIO_STATUS, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.AUDIO_STATUS, handler)
+  },
+
+  // Settings
+  getSetting: <T>(key: string) => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET, key) as Promise<T>,
+  setSetting: (key, value) => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_SET, key, value),
+  getAllSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET_ALL),
+
+  // Models
+  fetchModels: () => ipcRenderer.invoke(IPC_CHANNELS.MODELS_FETCH),
+
+  // Hotkeys
+  onHotkeyAskAI: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.HOTKEY_ASK_AI, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.HOTKEY_ASK_AI, handler)
+  },
+  onHotkeyScreenshot: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.HOTKEY_ASK_WITH_SCREENSHOT, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.HOTKEY_ASK_WITH_SCREENSHOT, handler)
+  },
+  onHotkeyToggleAudio: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.HOTKEY_TOGGLE_AUDIO, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.HOTKEY_TOGGLE_AUDIO, handler)
+  },
+  onHotkeyToggleOverlay: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.HOTKEY_TOGGLE_OVERLAY, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.HOTKEY_TOGGLE_OVERLAY, handler)
+  },
+
+  // Dashboard
+  openDashboard: () => ipcRenderer.send(IPC_CHANNELS.OPEN_DASHBOARD),
+
+  // App
+  getVersion: () => ipcRenderer.invoke(IPC_CHANNELS.APP_VERSION),
+  quit: () => ipcRenderer.send(IPC_CHANNELS.APP_QUIT)
+}
+
+contextBridge.exposeInMainWorld('specterAPI', api)

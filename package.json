@@ -1,0 +1,49 @@
+{
+  "name": "specter-ai",
+  "version": "1.0.0",
+  "description": "Open-source AI screen & meeting copilot — invisible overlay powered by OpenRouter",
+  "main": "./out/main/index.js",
+  "homepage": "https://github.com/specter-ai",
+  "author": "Specter AI",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux"
+  },
+  "dependencies": {
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^3.0.0",
+    "@headlessui/react": "^2.2.0",
+    "electron-store": "^8.2.0",
+    "lucide-react": "^0.460.0",
+    "openai": "^4.73.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "screenshot-desktop": "^1.12.8",
+    "tesseract.js": "^5.1.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@electron-toolkit/tsconfig": "^1.0.1",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}
