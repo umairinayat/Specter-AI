@@ -125,3 +125,15 @@ temp/
 *.tgz
 *.zip
 .yarn/
+
+# ──────────────────────────────────────────
+# Project-specific
+# ──────────────────────────────────────────
+# Tesseract OCR trained data (large binary, not version-controlled)
+*.traineddata
+
+# Windows reserved-name artifact (should never exist as a real file)
+NUL
+
+# AI/IDE agent tooling data
+.gemini/
