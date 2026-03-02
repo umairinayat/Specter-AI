@@ -84,6 +84,7 @@ export interface ScreenCaptureResult {
 export interface CostEstimate {
   promptTokens: number
   completionTokens: number
+  totalTokens: number
   totalCost: number
   model: string
 }

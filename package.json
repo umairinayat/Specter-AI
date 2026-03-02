@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "description": "Open-source AI screen & meeting copilot — invisible overlay powered by OpenRouter",
   "main": "./out/main/index.js",
-  "homepage": "https://github.com/specter-ai",
+  "homepage": "https://github.com/specter-ai/specter-ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/specter-ai/specter-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/specter-ai/specter-ai/issues"
+  },
   "author": "Specter AI",
   "license": "MIT",
   "scripts": {
@@ -11,11 +18,116 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+    "build:linux": "npm run build && electron-builder --linux",
+    "build:all": "npm run build && electron-builder --win --mac --linux"
+  },
+  "build": {
+    "appId": "com.specter.ai",
+    "productName": "Specter AI",
+    "copyright": "Copyright (c) 2026 Specter AI",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build-resources"
+    },
+    "files": [
+      "out/**/*",
+      "!out/**/*.map",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build-resources/icon.ico",
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build-resources/icon.ico",
+      "uninstallerIcon": "build-resources/icon.ico",
+      "installerHeaderIcon": "build-resources/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Specter AI"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build-resources/icon.png",
+      "category": "public.app-category.productivity",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}",
+      "hardenedRuntime": true,
+      "entitlements": "build-resources/entitlements.mac.plist",
+      "entitlementsInherit": "build-resources/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Specter AI needs microphone access to transcribe meeting audio.",
+        "NSScreenCaptureUsageDescription": "Specter AI needs screen capture access to read on-screen content via OCR."
+      }
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}",
+      "title": "${productName} ${version}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build-resources/icons",
+      "category": "Utility",
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}",
+      "desktop": {
+        "Name": "Specter AI",
+        "Comment": "AI Screen & Meeting Copilot",
+        "Categories": "Utility;Office;"
+      }
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "specter-ai",
+      "repo": "specter-ai"
+    }
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -23,6 +135,7 @@
     "@headlessui/react": "^2.2.0",
     "electron-store": "^8.2.0",
     "lucide-react": "^0.460.0",
+    "mic": "^2.1.2",
     "openai": "^4.73.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -41,7 +154,9 @@
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
+    "png-to-ico": "^3.0.1",
     "postcss": "^8.4.49",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.7.2",
     "vite": "^5.4.11"

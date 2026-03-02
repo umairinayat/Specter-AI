@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
 
   // Screen capture
   SCREEN_CAPTURE: 'screen:capture',
+  SCREEN_CAPTURE_PREVIEW: 'screen:capture-preview',
   SCREEN_CAPTURE_RESULT: 'screen:capture-result',
   SCREEN_CAPTURE_ERROR: 'screen:capture-error',
 
@@ -47,6 +48,12 @@ export const IPC_CHANNELS = {
   CONTEXT_GET: 'context:get',
   CONTEXT_SCREEN_TEXT: 'context:screen-text',
   CONTEXT_TRANSCRIPT: 'context:transcript',
+
+  // Conversations
+  CONVERSATIONS_LIST: 'conversations:list',
+  CONVERSATIONS_SAVE: 'conversations:save',
+  CONVERSATIONS_DELETE: 'conversations:delete',
+  CONVERSATIONS_CLEAR: 'conversations:clear',
 
   // App
   APP_QUIT: 'app:quit',

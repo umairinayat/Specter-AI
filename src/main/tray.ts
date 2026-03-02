@@ -9,7 +9,7 @@ let tray: Tray | null = null
 export function createTray(): Tray {
   // Create a simple 16x16 tray icon
   const iconPath = path.join(__dirname, '../../assets/tray-icon.png')
-  let icon: nativeImage
+  let icon: Electron.NativeImage
 
   try {
     icon = nativeImage.createFromPath(iconPath)

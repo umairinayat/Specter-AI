@@ -1,16 +1,25 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 
+export interface StreamDoneData {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  totalCost: number
+  model: string
+}
+
 export interface SpecterAPI {
   // AI
   queryAI: (query: string, includeScreen: boolean, includeAudio: boolean) => void
   cancelAI: () => void
   onStreamChunk: (callback: (chunk: string) => void) => () => void
-  onStreamDone: (callback: () => void) => () => void
+  onStreamDone: (callback: (data: StreamDoneData) => void) => () => void
   onStreamError: (callback: (error: string) => void) => () => void
 
   // Screen
   captureScreen: () => Promise<{ text: string; screenshot?: string; timestamp: number }>
+  captureScreenPreview: () => Promise<{ screenshot: string; timestamp: number }>
 
   // Audio
   startAudio: () => void
@@ -35,6 +44,12 @@ export interface SpecterAPI {
   // Dashboard
   openDashboard: () => void
 
+  // Conversations
+  listConversations: () => Promise<Array<{ id: string; title: string; messages: Array<{ id: string; role: string; content: string; timestamp: number; tokenCount?: number; cost?: number }>; model: string; createdAt: number; updatedAt: number }>>
+  saveConversation: (conversation: { id: string; title: string; messages: Array<{ id: string; role: string; content: string; timestamp: number; tokenCount?: number; cost?: number }>; model: string; createdAt: number; updatedAt: number }) => Promise<void>
+  deleteConversation: (id: string) => void
+  clearConversations: () => void
+
   // App
   getVersion: () => Promise<string>
   quit: () => void
@@ -54,7 +69,7 @@ const api: SpecterAPI = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.AI_STREAM_CHUNK, handler)
   },
   onStreamDone: (callback) => {
-    const handler = () => callback()
+    const handler = (_: Electron.IpcRendererEvent, data: StreamDoneData) => callback(data)
     ipcRenderer.on(IPC_CHANNELS.AI_STREAM_DONE, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.AI_STREAM_DONE, handler)
   },
@@ -66,6 +81,7 @@ const api: SpecterAPI = {
 
   // Screen
   captureScreen: () => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_CAPTURE),
+  captureScreenPreview: () => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_CAPTURE_PREVIEW),
 
   // Audio
   startAudio: () => ipcRenderer.send(IPC_CHANNELS.AUDIO_START),
@@ -113,6 +129,12 @@ const api: SpecterAPI = {
 
   // Dashboard
   openDashboard: () => ipcRenderer.send(IPC_CHANNELS.OPEN_DASHBOARD),
+
+  // Conversations
+  listConversations: () => ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_LIST),
+  saveConversation: (conversation) => ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_SAVE, conversation),
+  deleteConversation: (id) => ipcRenderer.send(IPC_CHANNELS.CONVERSATIONS_DELETE, id),
+  clearConversations: () => ipcRenderer.send(IPC_CHANNELS.CONVERSATIONS_CLEAR),
 
   // App
   getVersion: () => ipcRenderer.invoke(IPC_CHANNELS.APP_VERSION),

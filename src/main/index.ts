@@ -7,6 +7,18 @@ import { createTray, destroyTray } from './tray'
 import { registerHotkeys, unregisterAllHotkeys } from './hotkey-manager'
 import { registerIpcHandlers } from './ipc-handlers'
 
+// Catch unhandled errors globally — prevents crash from spawn ENOENT (e.g. missing sox)
+process.on('uncaughtException', (err) => {
+  console.error('[Specter] Uncaught exception:', err.message)
+  // Don't crash the app for non-fatal spawn errors
+  if (err.message.includes('ENOENT') || err.message.includes('spawn')) {
+    console.error('[Specter] A required system binary is missing. Audio features may be unavailable.')
+    return
+  }
+  // For truly fatal errors, still exit
+  throw err
+})
+
 // Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {

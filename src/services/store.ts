@@ -1,7 +1,7 @@
 // Persistent settings store using electron-store
 import Store from 'electron-store'
 import { DEFAULT_SETTINGS } from '../shared/constants'
-import type { UserSettings } from '../shared/types'
+import type { UserSettings, Conversation } from '../shared/types'
 
 const schema = {
   openrouterApiKey: { type: 'string' as const, default: DEFAULT_SETTINGS.openrouterApiKey },
@@ -37,9 +37,11 @@ const schema = {
   playbooks: { type: 'array' as const, default: [] }
 }
 
-let store: Store | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let store: Store<any> | null = null
 
-export function getStore(): Store {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getStore(): Store<any> {
   if (!store) {
     store = new Store({
       name: 'specter-settings',
@@ -78,4 +80,34 @@ export function getAllSettings(): UserSettings {
 
 export function resetSettings(): void {
   getStore().clear()
+}
+
+// Conversation management
+
+export function getConversations(): Conversation[] {
+  return getSetting<Conversation[]>('conversations') || []
+}
+
+export function saveConversation(conversation: Conversation): void {
+  const conversations = getConversations()
+  const existingIdx = conversations.findIndex(c => c.id === conversation.id)
+  if (existingIdx >= 0) {
+    conversations[existingIdx] = conversation
+  } else {
+    conversations.unshift(conversation) // newest first
+  }
+  // Keep max 100 conversations
+  if (conversations.length > 100) {
+    conversations.splice(100)
+  }
+  setSetting('conversations', conversations)
+}
+
+export function deleteConversation(id: string): void {
+  const conversations = getConversations().filter(c => c.id !== id)
+  setSetting('conversations', conversations)
+}
+
+export function clearConversations(): void {
+  setSetting('conversations', [])
 }
