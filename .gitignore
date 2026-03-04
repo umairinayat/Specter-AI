@@ -137,3 +137,6 @@ NUL
 
 # AI/IDE agent tooling data
 .gemini/
+
+CLAUDE.md
+.agent/
