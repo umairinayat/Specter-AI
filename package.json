@@ -11,7 +11,10 @@
   "bugs": {
     "url": "https://github.com/specter-ai/specter-ai/issues"
   },
-  "author": "Specter AI",
+  "author": {
+    "name": "Specter AI",
+    "email": "specterai@proton.me"
+  },
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
