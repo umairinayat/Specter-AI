@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/specter-ai/specter-ai?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/github/license/umairinayat/Specter-AI?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/electron-33+-47848F?style=flat-square&logo=electron" alt="Electron" />
   <img src="https://img.shields.io/badge/react-18-61DAFB?style=flat-square&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/typescript-5-3178C6?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -92,7 +92,7 @@ Think of it as a free, open-source, privacy-first alternative to Cluely.
 
 ### Download Pre-Built Binaries
 
-Download the latest release for your platform from the [Releases](https://github.com/specter-ai/specter-ai/releases) page:
+Download the latest release for your platform from the [Releases](https://github.com/umairinayat/Specter-AI/releases) page:
 
 | Platform | Format |
 |---|---|
@@ -106,8 +106,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ```bash
 # Clone the repository
-git clone https://github.com/specter-ai/specter-ai.git
-cd specter-ai
+git clone https://github.com/umairinayat/Specter-AI.git
+cd Specter-AI
 
 # Install dependencies
 npm install

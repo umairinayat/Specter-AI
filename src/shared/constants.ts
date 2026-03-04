@@ -100,5 +100,5 @@ export const DEFAULT_SETTINGS = {
 }
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
-export const OPENROUTER_REFERER = 'https://github.com/specter-ai'
+export const OPENROUTER_REFERER = 'https://github.com/umairinayat/Specter-AI'
 export const OPENROUTER_TITLE = 'Specter AI'
