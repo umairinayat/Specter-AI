@@ -21,11 +21,11 @@ export interface SpecterAPI {
   captureScreen: () => Promise<{ text: string; screenshot?: string; timestamp: number }>
   captureScreenPreview: () => Promise<{ screenshot: string; timestamp: number }>
 
-  // Audio
-  startAudio: () => void
-  stopAudio: () => void
+  // Audio — recording is handled in renderer via MediaRecorder
+  checkAudioConfig: () => Promise<{ configured: boolean; provider: string; error?: string }>
+  sendAudioForTranscription: (audioData: ArrayBuffer, mimeType: string) => Promise<string>
   onTranscript: (callback: (text: string) => void) => () => void
-  onAudioStatus: (callback: (status: { isRecording: boolean; duration: number }) => void) => () => void
+  onAudioStatus: (callback: (status: { isRecording: boolean; duration: number; error?: string }) => void) => () => void
 
   // Settings
   getSetting: <T>(key: string) => Promise<T>
@@ -83,16 +83,21 @@ const api: SpecterAPI = {
   captureScreen: () => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_CAPTURE),
   captureScreenPreview: () => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_CAPTURE_PREVIEW),
 
-  // Audio
-  startAudio: () => ipcRenderer.send(IPC_CHANNELS.AUDIO_START),
-  stopAudio: () => ipcRenderer.send(IPC_CHANNELS.AUDIO_STOP),
+  // Audio — recording happens in renderer, transcription in main
+  checkAudioConfig: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.AUDIO_CHECK_CONFIG) as Promise<{ configured: boolean; provider: string; error?: string }>
+  },
+  sendAudioForTranscription: (audioData: ArrayBuffer, mimeType: string) => {
+    // Convert ArrayBuffer to Buffer-compatible format for IPC transfer
+    return ipcRenderer.invoke(IPC_CHANNELS.AUDIO_TRANSCRIBE, audioData, mimeType) as Promise<string>
+  },
   onTranscript: (callback) => {
     const handler = (_: Electron.IpcRendererEvent, text: string) => callback(text)
     ipcRenderer.on(IPC_CHANNELS.AUDIO_TRANSCRIPT, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.AUDIO_TRANSCRIPT, handler)
   },
   onAudioStatus: (callback) => {
-    const handler = (_: Electron.IpcRendererEvent, status: { isRecording: boolean; duration: number }) => callback(status)
+    const handler = (_: Electron.IpcRendererEvent, status: { isRecording: boolean; duration: number; error?: string }) => callback(status)
     ipcRenderer.on(IPC_CHANNELS.AUDIO_STATUS, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.AUDIO_STATUS, handler)
   },

@@ -20,8 +20,8 @@ export const IPC_CHANNELS = {
   SCREEN_CAPTURE_ERROR: 'screen:capture-error',
 
   // Audio
-  AUDIO_START: 'audio:start',
-  AUDIO_STOP: 'audio:stop',
+  AUDIO_CHECK_CONFIG: 'audio:check-config',
+  AUDIO_TRANSCRIBE: 'audio:transcribe',
   AUDIO_TRANSCRIPT: 'audio:transcript',
   AUDIO_STATUS: 'audio:status',
 

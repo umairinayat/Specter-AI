@@ -5,7 +5,7 @@ import { getSetting, setSetting, getAllSettings, getConversations, saveConversat
 import { streamCompletion, cancelStream, fetchAvailableModels, estimateCost } from '../services/openrouter'
 import { buildSystemPrompt, buildUserMessage, estimateTokens } from '../services/context-builder'
 import { captureScreenText, captureScreenOnly } from './screen-capture'
-import { startAudioCapture, stopAudioCapture, getTranscript } from './audio-capture'
+import { transcribeAudio, getTranscript, checkWhisperConfig } from './audio-capture'
 import { createDashboardWindow } from './dashboard-window'
 import { setOverlayOpacity } from './overlay-window'
 import { APP_VERSION, DEFAULT_MODELS } from '../shared/constants'
@@ -129,15 +129,31 @@ export function registerIpcHandlers(overlayWindow: BrowserWindow): void {
     }
   })
 
-  // Audio controls
-  ipcMain.on(IPC_CHANNELS.AUDIO_START, () => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-      startAudioCapture(overlayWindow)
-    }
+  // Audio config check — called before starting recording to give immediate feedback
+  ipcMain.handle(IPC_CHANNELS.AUDIO_CHECK_CONFIG, () => {
+    return checkWhisperConfig()
   })
 
-  ipcMain.on(IPC_CHANNELS.AUDIO_STOP, () => {
-    stopAudioCapture()
+  // Audio transcription — receives audio buffer from renderer's MediaRecorder
+  // Electron IPC can deliver ArrayBuffer as Buffer, Uint8Array, or ArrayBuffer depending on version
+  ipcMain.handle(IPC_CHANNELS.AUDIO_TRANSCRIBE, async (_event, audioData: unknown, mimeType: string) => {
+    try {
+      let buffer: Buffer
+      if (Buffer.isBuffer(audioData)) {
+        buffer = audioData
+      } else if (audioData instanceof ArrayBuffer) {
+        buffer = Buffer.from(audioData)
+      } else if (ArrayBuffer.isView(audioData)) {
+        buffer = Buffer.from(audioData.buffer, audioData.byteOffset, audioData.byteLength)
+      } else {
+        buffer = Buffer.from(audioData as ArrayBuffer)
+      }
+      const text = await transcribeAudio(buffer, mimeType || 'audio/webm;codecs=opus')
+      return text
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Transcription failed'
+      throw new Error(message)
+    }
   })
 
   // Settings

@@ -42,12 +42,6 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
           "target": "portable",
           "arch": [
             "x64"
@@ -55,7 +49,8 @@
         }
       ],
       "icon": "build-resources/icon.ico",
-      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
@@ -135,7 +130,6 @@
     "@headlessui/react": "^2.2.0",
     "electron-store": "^8.2.0",
     "lucide-react": "^0.460.0",
-    "mic": "^2.1.2",
     "openai": "^4.73.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

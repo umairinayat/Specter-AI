@@ -1,202 +1,140 @@
-// Audio capture module — real microphone recording with rolling transcript buffer
-import { BrowserWindow, dialog } from 'electron'
-import { IPC_CHANNELS } from '../shared/ipc-channels'
+// Audio capture module — transcription service for audio received from the renderer process
+// Audio recording is handled in the renderer via Web Audio API (MediaRecorder).
+// This module receives audio buffers via IPC and sends them to a Whisper-compatible API.
+
 import { getSetting } from '../services/store'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { writeFileSync, unlinkSync, existsSync } from 'fs'
-import { execSync } from 'child_process'
 
-import type mic from 'mic'
-
-let isRecording = false
-let recordingStartTime = 0
 let transcriptBuffer = ''
-let statusInterval: ReturnType<typeof setInterval> | null = null
-let audioChunks: Buffer[] = []
-let micInstance: ReturnType<typeof mic> | null = null
-let transcriptionInterval: ReturnType<typeof setInterval> | null = null
-let targetWindow: BrowserWindow | null = null
-let micAvailable = false
 
-const TRANSCRIPTION_INTERVAL_MS = 10_000 // transcribe every 10 seconds
 const MAX_TRANSCRIPT_LENGTH = 5000
 
-/**
- * Check if SoX is installed (required by the `mic` package).
- */
-function isSoxInstalled(): boolean {
-  try {
-    execSync(process.platform === 'win32' ? 'where sox' : 'which sox', { stdio: 'ignore' })
-    return true
-  } catch {
-    return false
+// Whisper endpoint configs
+const WHISPER_ENDPOINTS = {
+  groq: {
+    url: 'https://api.groq.com/openai/v1/audio/transcriptions',
+    model: 'whisper-large-v3-turbo'
+  },
+  openai: {
+    url: 'https://api.openai.com/v1/audio/transcriptions',
+    model: 'whisper-1'
   }
+} as const
+
+/**
+ * Check whether Whisper transcription is properly configured.
+ * Call this before starting recording to give the user immediate feedback.
+ */
+export function checkWhisperConfig(): { configured: boolean; provider: string; error?: string } {
+  const provider = getSetting<string>('whisperProvider') || 'groq'
+  const whisperApiKey = getSetting<string>('whisperApiKey') || ''
+
+  if (!whisperApiKey) {
+    const providerName = provider === 'groq' ? 'Groq' : provider === 'openai' ? 'OpenAI' : 'Whisper'
+    return {
+      configured: false,
+      provider,
+      error: `No ${providerName} API key set. Go to Settings > Audio Transcription to add your key.${
+        provider === 'groq' ? ' Get a free key at console.groq.com' : ''
+      }`
+    }
+  }
+
+  if (provider === 'custom') {
+    const customUrl = getSetting<string>('whisperApiUrl') || ''
+    if (!customUrl) {
+      return { configured: false, provider, error: 'Custom Whisper endpoint URL is not set. Configure it in Settings.' }
+    }
+  }
+
+  return { configured: true, provider }
 }
 
 /**
- * Start recording from the default microphone.
- * Audio data is accumulated in memory and periodically sent to Whisper for transcription.
+ * Get the Whisper API endpoint and key based on user settings.
  *
- * Requires SoX to be installed: https://sourceforge.net/projects/sox/
- *   Windows: download installer or `choco install sox`
- *   macOS:   `brew install sox`
- *   Linux:   `sudo apt install sox`
+ * Supports three providers:
+ * - 'groq'   (default) — free tier via Groq Cloud (whisper-large-v3-turbo)
+ * - 'openai'           — OpenAI Whisper API (whisper-1), requires OpenAI key
+ * - 'custom'           — user-specified URL + model
+ *
+ * Users get a free Groq key at https://console.groq.com
  */
-export async function startAudioCapture(window: BrowserWindow): Promise<void> {
-  if (isRecording) return
+function getWhisperConfig(): { url: string; model: string; apiKey: string } | null {
+  const provider = getSetting<string>('whisperProvider') || 'groq'
+  const whisperApiKey = getSetting<string>('whisperApiKey') || ''
 
-  targetWindow = window
-  recordingStartTime = Date.now()
-  audioChunks = []
-
-  // Pre-check for SoX to avoid the unhandled spawn ENOENT crash
-  if (!isSoxInstalled()) {
-    console.error('[Specter] SoX is not installed — audio capture unavailable')
-    const installCmd =
-      process.platform === 'win32'
-        ? 'Download from https://sourceforge.net/projects/sox/ or run:\n  choco install sox'
-        : process.platform === 'darwin'
-          ? 'brew install sox'
-          : 'sudo apt install sox'
-
-    dialog.showErrorBox(
-      'SoX Required for Audio',
-      `Audio recording requires SoX (Sound eXchange) to be installed.\n\n${installCmd}\n\nRestart Specter AI after installing.`
-    )
-    // Don't set isRecording = true — audio is not available
-    return
+  // Do NOT fall back to OpenRouter key — it won't work with Groq or OpenAI endpoints
+  if (!whisperApiKey) {
+    return null
   }
 
-  isRecording = true
-
-  try {
-    // Dynamic import since mic is a CommonJS module
-    const micImport = (await import('mic')).default || (await import('mic'))
-    micInstance = micImport({
-      rate: '16000',
-      channels: '1',
-      fileType: 'wav',
-      bitwidth: '16',
-      encoding: 'signed-integer',
-      endian: 'little',
-      device: 'default'
-    })
-
-    const micStream = micInstance!.getAudioStream()
-
-    micStream.on('data', (chunk: Buffer) => {
-      audioChunks.push(chunk)
-    })
-
-    micStream.on('error', (err: Error) => {
-      console.error('[Specter] Mic stream error:', err.message)
-      // If sox spawn fails at runtime, clean up gracefully
-      if (err.message.includes('ENOENT') || err.message.includes('sox')) {
-        console.error('[Specter] SoX process failed — stopping audio capture')
-        stopAudioCapture()
-      }
-    })
-
-    micInstance!.start()
-    micAvailable = true
-    console.log('[Specter] Audio capture started (real mic via SoX)')
-
-    // Periodic transcription — every 10 seconds, send accumulated audio to Whisper
-    transcriptionInterval = setInterval(async () => {
-      if (audioChunks.length > 0) {
-        await transcribeCurrentAudio()
-      }
-    }, TRANSCRIPTION_INTERVAL_MS)
-
-  } catch (err: unknown) {
-    console.error('[Specter] Failed to start mic:', err)
-    isRecording = false
-    micAvailable = false
-    return
+  if (provider === 'custom') {
+    const customUrl = getSetting<string>('whisperApiUrl') || ''
+    const customModel = getSetting<string>('whisperModel') || 'whisper-1'
+    if (!customUrl) return null
+    return { url: customUrl, model: customModel, apiKey: whisperApiKey }
   }
 
-  // Send status updates to renderer
-  statusInterval = setInterval(() => {
-    if (targetWindow && !targetWindow.isDestroyed()) {
-      targetWindow.webContents.send(IPC_CHANNELS.AUDIO_STATUS, {
-        isRecording: true,
-        duration: Math.floor((Date.now() - recordingStartTime) / 1000),
-        hasTranscript: transcriptBuffer.length > 0
-      })
-    }
-  }, 1000)
+  const endpoint = WHISPER_ENDPOINTS[provider as keyof typeof WHISPER_ENDPOINTS]
+    || WHISPER_ENDPOINTS.groq
+
+  return { url: endpoint.url, model: endpoint.model, apiKey: whisperApiKey }
 }
 
 /**
- * Stop recording and return the full transcript.
+ * Transcribe an audio buffer using the configured Whisper-compatible API.
+ * Called from the IPC handler when the renderer sends recorded audio chunks.
+ *
+ * @param audioBuffer - Raw audio data (webm/opus from MediaRecorder, or WAV)
+ * @param mimeType - MIME type of the audio data (e.g. 'audio/webm;codecs=opus', 'audio/wav')
+ * @returns The transcribed text, or empty string on failure
  */
-export function stopAudioCapture(): string {
-  isRecording = false
-
-  if (micInstance) {
-    try {
-      micInstance.stop()
-    } catch {
-      // mic may already be stopped
-    }
-    micInstance = null
+export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Promise<string> {
+  const config = getWhisperConfig()
+  if (!config) {
+    const check = checkWhisperConfig()
+    throw new Error(check.error || 'Whisper not configured. Set a Whisper API key in Settings > Audio Transcription.')
   }
 
-  if (statusInterval) {
-    clearInterval(statusInterval)
-    statusInterval = null
+  // Skip if audio buffer is too small (< 1KB is almost certainly silence/empty)
+  if (audioBuffer.length < 1024) {
+    return ''
   }
 
-  if (transcriptionInterval) {
-    clearInterval(transcriptionInterval)
-    transcriptionInterval = null
-  }
+  // Determine file extension from MIME type
+  const ext = mimeType.includes('webm') ? 'webm'
+    : mimeType.includes('ogg') ? 'ogg'
+    : mimeType.includes('mp4') ? 'mp4'
+    : 'wav'
 
-  const transcript = transcriptBuffer
-  audioChunks = []
-  targetWindow = null
-  console.log('[Specter] Audio capture stopped')
-  return transcript
-}
-
-/**
- * Transcribe the current accumulated audio using the Whisper API via OpenRouter.
- * Sends the transcript to the renderer via IPC.
- */
-async function transcribeCurrentAudio(): Promise<void> {
-  if (audioChunks.length === 0) return
-
-  const apiKey = getSetting<string>('openrouterApiKey')
-  if (!apiKey) {
-    console.warn('[Specter] No API key — skipping transcription')
-    return
-  }
-
-  // Combine audio chunks into a single buffer
-  const audioBuffer = Buffer.concat(audioChunks)
-  // Keep only the most recent chunks after transcription to save memory
-  audioChunks = []
-
-  // Build a WAV file from the raw PCM data
-  const wavBuffer = buildWavBuffer(audioBuffer, 16000, 1, 16)
-  const tmpPath = join(tmpdir(), `specter-audio-${Date.now()}.wav`)
+  const tmpPath = join(tmpdir(), `specter-audio-${Date.now()}.${ext}`)
 
   try {
-    writeFileSync(tmpPath, wavBuffer)
+    writeFileSync(tmpPath, audioBuffer)
 
-    // Use OpenAI Whisper API (compatible with OpenRouter)
+    // Send to Whisper API
     const formData = new FormData()
-    const wavCopy = new ArrayBuffer(wavBuffer.byteLength)
-    new Uint8Array(wavCopy).set(new Uint8Array(wavBuffer.buffer, wavBuffer.byteOffset, wavBuffer.byteLength))
-    const blob = new Blob([wavCopy], { type: 'audio/wav' })
-    formData.append('file', blob, 'audio.wav')
-    formData.append('model', 'whisper-1')
+    const bufCopy = new ArrayBuffer(audioBuffer.byteLength)
+    new Uint8Array(bufCopy).set(new Uint8Array(audioBuffer.buffer, audioBuffer.byteOffset, audioBuffer.byteLength))
+    const blob = new Blob([bufCopy], { type: mimeType })
+    formData.append('file', blob, `audio.${ext}`)
+    formData.append('model', config.model)
 
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Add language hint if configured
+    const language = getSetting<string>('language')
+    if (language) {
+      formData.append('language', language)
+    }
+
+    console.log(`[Specter] Sending ${audioBuffer.length} bytes (${ext}) to ${config.url} using model ${config.model}`)
+
+    const response = await fetch(config.url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${config.apiKey}`
       },
       body: formData
     })
@@ -205,18 +143,34 @@ async function transcribeCurrentAudio(): Promise<void> {
       const data = await response.json() as { text?: string }
       const text = data.text?.trim()
       if (text) {
-        appendTranscript(text, MAX_TRANSCRIPT_LENGTH)
-
-        // Send transcript to overlay
-        if (targetWindow && !targetWindow.isDestroyed()) {
-          targetWindow.webContents.send(IPC_CHANNELS.AUDIO_TRANSCRIPT, transcriptBuffer)
-        }
+        console.log(`[Specter] Transcription: "${text.slice(0, 80)}${text.length > 80 ? '...' : ''}"`)
+        appendTranscript(text)
+        return text
       }
+      return ''
     } else {
-      console.warn('[Specter] Whisper transcription failed:', response.status, response.statusText)
+      const errorBody = await response.text().catch(() => '')
+      const truncatedBody = errorBody.slice(0, 200)
+      console.warn(`[Specter] Whisper API ${response.status}: ${truncatedBody}`)
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Whisper API key is invalid or expired. Check Settings > Audio Transcription.')
+      }
+      if (response.status === 413) {
+        throw new Error('Audio chunk too large for Whisper API. Try a shorter recording interval.')
+      }
+      if (response.status === 429) {
+        // Rate limit — not a fatal error, just skip this chunk
+        console.warn('[Specter] Whisper rate limited, skipping chunk')
+        return ''
+      }
+
+      throw new Error(`Whisper API error ${response.status}: ${truncatedBody || response.statusText}`)
     }
   } catch (err: unknown) {
-    console.warn('[Specter] Transcription error:', err instanceof Error ? err.message : err)
+    // Re-throw all errors so they reach the renderer for user feedback
+    if (err instanceof Error) throw err
+    throw new Error(`Transcription failed: ${String(err)}`)
   } finally {
     // Clean up temp file
     try {
@@ -225,39 +179,6 @@ async function transcribeCurrentAudio(): Promise<void> {
       // ignore cleanup failures
     }
   }
-}
-
-/**
- * Build a WAV file buffer from raw PCM data.
- */
-function buildWavBuffer(pcmData: Buffer, sampleRate: number, channels: number, bitDepth: number): Buffer {
-  const byteRate = sampleRate * channels * (bitDepth / 8)
-  const blockAlign = channels * (bitDepth / 8)
-  const dataSize = pcmData.length
-  const headerSize = 44
-  const buffer = Buffer.alloc(headerSize + dataSize)
-
-  // RIFF header
-  buffer.write('RIFF', 0)
-  buffer.writeUInt32LE(36 + dataSize, 4)
-  buffer.write('WAVE', 8)
-
-  // fmt sub-chunk
-  buffer.write('fmt ', 12)
-  buffer.writeUInt32LE(16, 16)           // sub-chunk size
-  buffer.writeUInt16LE(1, 20)            // PCM format
-  buffer.writeUInt16LE(channels, 22)
-  buffer.writeUInt32LE(sampleRate, 24)
-  buffer.writeUInt32LE(byteRate, 28)
-  buffer.writeUInt16LE(blockAlign, 32)
-  buffer.writeUInt16LE(bitDepth, 34)
-
-  // data sub-chunk
-  buffer.write('data', 36)
-  buffer.writeUInt32LE(dataSize, 40)
-  pcmData.copy(buffer, headerSize)
-
-  return buffer
 }
 
 export function appendTranscript(text: string, maxLength: number = MAX_TRANSCRIPT_LENGTH): void {
@@ -274,13 +195,4 @@ export function getTranscript(): string {
 
 export function clearTranscript(): void {
   transcriptBuffer = ''
-}
-
-export function getIsRecording(): boolean {
-  return isRecording
-}
-
-export function getRecordingDuration(): number {
-  if (!isRecording) return 0
-  return Math.floor((Date.now() - recordingStartTime) / 1000)
 }

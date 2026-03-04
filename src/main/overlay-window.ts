@@ -2,7 +2,7 @@
 import { BrowserWindow, screen } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
-import { getSetting } from '../services/store'
+import { getSetting, setSetting } from '../services/store'
 import { OVERLAY_DEFAULTS } from '../shared/constants'
 
 let overlayWindow: BrowserWindow | null = null
@@ -59,7 +59,6 @@ export function createOverlayWindow(): BrowserWindow {
   overlayWindow.on('moved', () => {
     if (overlayWindow) {
       const [px, py] = overlayWindow.getPosition()
-      const { setSetting } = require('../services/store')
       setSetting('overlayPosition', { x: px, y: py })
     }
   })
@@ -68,7 +67,6 @@ export function createOverlayWindow(): BrowserWindow {
   overlayWindow.on('resize', () => {
     if (overlayWindow) {
       const [w, h] = overlayWindow.getSize()
-      const { setSetting } = require('../services/store')
       setSetting('overlaySize', { width: w, height: h })
     }
   })

@@ -20,6 +20,22 @@ interface Message {
   cost?: number
 }
 
+// Preferred MIME type for MediaRecorder (webm/opus is widely supported and Whisper accepts it)
+function getPreferredMimeType(): string {
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/mp4'
+  ]
+  for (const mime of candidates) {
+    if (MediaRecorder.isTypeSupported(mime)) return mime
+  }
+  return '' // fallback — let MediaRecorder pick
+}
+
+const TRANSCRIPTION_INTERVAL_MS = 10_000 // send audio for transcription every 10 seconds
+
 export default function App() {
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -30,6 +46,7 @@ export default function App() {
   const [transcript, setTranscript] = useState('')
   const [includeScreen, setIncludeScreen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const [audioError, setAudioError] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -52,6 +69,12 @@ export default function App() {
 
   // Pending cost data for the current stream
   const pendingCostRef = useRef<StreamDoneData | null>(null)
+
+  // MediaRecorder refs — managed imperatively to avoid re-render issues
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioStreamRef = useRef<MediaStream | null>(null)
+  const transcriptionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const mimeTypeRef = useRef<string>('')
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -88,6 +111,167 @@ export default function App() {
     })
   }, [messages])
 
+  /**
+   * Send a complete audio Blob to the main process for Whisper transcription.
+   * Each blob must be a self-contained valid media file (has proper headers).
+   */
+  const sendBlobForTranscription = useCallback(async (blob: Blob) => {
+    // Skip very small blobs (< 1KB — likely silence/empty)
+    if (blob.size < 1024) return
+
+    try {
+      const arrayBuffer = await blob.arrayBuffer()
+      const text = await window.specterAPI?.sendAudioForTranscription(
+        arrayBuffer,
+        mimeTypeRef.current || 'audio/webm'
+      )
+      if (text) {
+        setTranscript(prev => {
+          const updated = (prev + ' ' + text).trim()
+          // Keep rolling buffer within 5000 chars
+          return updated.length > 5000 ? updated.slice(-5000) : updated
+        })
+        // Clear any previous audio error on success
+        setAudioError(null)
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Transcription failed'
+      console.warn('[Specter] Transcription error:', msg)
+      // Show ALL transcription errors to the user
+      setAudioError(msg)
+    }
+  }, [])
+
+  /**
+   * Create a fresh MediaRecorder on the given stream.
+   * When the recorder is stopped, its ondataavailable fires with a complete valid media file
+   * which is then sent for transcription.
+   */
+  const createRecorder = useCallback((stream: MediaStream): MediaRecorder => {
+    const mimeType = mimeTypeRef.current
+    const recorder = new MediaRecorder(stream, {
+      ...(mimeType ? { mimeType } : {})
+    })
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        sendBlobForTranscription(event.data)
+      }
+    }
+
+    recorder.onerror = () => {
+      console.error('[Specter] MediaRecorder error')
+    }
+
+    return recorder
+  }, [sendBlobForTranscription])
+
+  /**
+   * Start recording audio via Web Audio API (MediaRecorder).
+   * No external dependencies required — uses browser's built-in audio capture.
+   *
+   * First checks if Whisper is configured. If not, shows an error immediately
+   * instead of waiting 10 seconds for the first transcription attempt to fail.
+   *
+   * Strategy: every 10 seconds, stop the current recorder (producing a complete valid
+   * audio file) and immediately start a fresh recorder on the same stream. This ensures
+   * each file sent to Whisper has proper container headers (WebM EBML header, etc).
+   */
+  const startRecording = useCallback(async () => {
+    setAudioError(null)
+
+    // Check whisper config before starting — give immediate feedback
+    try {
+      const config = await window.specterAPI?.checkAudioConfig()
+      if (config && !config.configured) {
+        setAudioError(config.error || 'Audio transcription not configured. Add a Whisper API key in Settings.')
+        return
+      }
+    } catch {
+      // If the check fails, proceed anyway — transcription will fail with a clear error later
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000
+        }
+      })
+
+      audioStreamRef.current = stream
+      mimeTypeRef.current = getPreferredMimeType()
+
+      // Start the first recorder
+      const recorder = createRecorder(stream)
+      recorder.start()
+      mediaRecorderRef.current = recorder
+
+      setIsRecording(true)
+
+      // Every 10 seconds: stop current recorder (fires ondataavailable with complete file),
+      // then create and start a new recorder on the same stream
+      transcriptionTimerRef.current = setInterval(() => {
+        const currentRecorder = mediaRecorderRef.current
+        if (currentRecorder && currentRecorder.state === 'recording' && audioStreamRef.current) {
+          currentRecorder.stop() // triggers ondataavailable → sendBlobForTranscription
+          const newRecorder = createRecorder(audioStreamRef.current)
+          newRecorder.start()
+          mediaRecorderRef.current = newRecorder
+        }
+      }, TRANSCRIPTION_INTERVAL_MS)
+
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to access microphone'
+      console.error('[Specter] Mic access error:', msg)
+      setAudioError(
+        msg.includes('NotAllowed') || msg.includes('Permission')
+          ? 'Microphone access denied. Allow microphone access in your system settings.'
+          : `Microphone error: ${msg}`
+      )
+    }
+  }, [createRecorder])
+
+  /**
+   * Stop recording. The final recorder.stop() fires ondataavailable with the
+   * remaining audio, which is automatically sent for transcription.
+   */
+  const stopRecording = useCallback(() => {
+    // Stop the MediaRecorder — this triggers ondataavailable with the final chunk
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+    }
+    mediaRecorderRef.current = null
+
+    // Stop all audio tracks (releases the microphone)
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop())
+      audioStreamRef.current = null
+    }
+
+    // Clear the rotation timer
+    if (transcriptionTimerRef.current) {
+      clearInterval(transcriptionTimerRef.current)
+      transcriptionTimerRef.current = null
+    }
+
+    setIsRecording(false)
+  }, [])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(track => track.stop())
+      }
+      if (transcriptionTimerRef.current) clearInterval(transcriptionTimerRef.current)
+    }
+  }, [])
+
   // Submit handler — uses refs for hotkey compatibility
   const doSubmit = useCallback((withScreen = false) => {
     const q = queryRef.current.trim()
@@ -113,13 +297,11 @@ export default function App() {
 
   const toggleRecording = useCallback(() => {
     if (isRecordingRef.current) {
-      window.specterAPI?.stopAudio()
-      setIsRecording(false)
+      stopRecording()
     } else {
-      window.specterAPI?.startAudio()
-      setIsRecording(true)
+      startRecording()
     }
-  }, [])
+  }, [startRecording, stopRecording])
 
   const cancelStream = useCallback(() => {
     window.specterAPI?.cancelAI()
@@ -166,10 +348,6 @@ export default function App() {
       setStreamingContent('')
     })
 
-    const unsubTranscript = api.onTranscript((text) => {
-      setTranscript(text)
-    })
-
     // Hotkey handlers use refs so they always see current state
     const unsubHotkeyAsk = api.onHotkeyAskAI(() => {
       doSubmit()
@@ -187,7 +365,6 @@ export default function App() {
       unsubChunk()
       unsubDone()
       unsubError()
-      unsubTranscript()
       unsubHotkeyAsk()
       unsubHotkeyScreenshot()
       unsubHotkeyAudio()
@@ -294,6 +471,12 @@ export default function App() {
         {error && (
           <div className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20">
             <p className="text-red-400 text-xs">{error}</p>
+          </div>
+        )}
+
+        {audioError && (
+          <div className="px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <p className="text-amber-400 text-xs">{audioError}</p>
           </div>
         )}
 

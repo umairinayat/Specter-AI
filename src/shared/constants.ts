@@ -91,7 +91,12 @@ export const DEFAULT_SETTINGS = {
   maxTranscriptLength: 5000,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   language: 'en',
-  theme: 'dark' as const
+  theme: 'dark' as const,
+  // Whisper / audio transcription settings
+  whisperProvider: 'groq' as 'groq' | 'openai' | 'custom',
+  whisperApiKey: '',        // separate key for Whisper (Groq key or OpenAI key)
+  whisperApiUrl: '',        // only used when provider is 'custom'
+  whisperModel: ''          // only used when provider is 'custom'
 }
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'

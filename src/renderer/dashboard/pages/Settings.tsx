@@ -1,8 +1,8 @@
-// Settings page — API key, hotkeys, overlay config, system prompt
+// Settings page — API key, hotkeys, overlay config, audio transcription, system prompt
 import { useState, useEffect, useCallback } from 'react'
 import {
   Key, Eye, EyeOff, Keyboard, Monitor, Sliders, MessageSquare,
-  Save, RotateCcw, CheckCircle, AlertCircle, Loader2
+  Save, RotateCcw, CheckCircle, AlertCircle, Loader2, Mic
 } from 'lucide-react'
 
 interface SettingsState {
@@ -20,6 +20,11 @@ interface SettingsState {
     toggleAudio: string
     screenshotAsk: string
   }
+  // Whisper / audio transcription
+  whisperProvider: 'groq' | 'openai' | 'custom'
+  whisperApiKey: string
+  whisperApiUrl: string
+  whisperModel: string
 }
 
 const DEFAULT_STATE: SettingsState = {
@@ -36,12 +41,17 @@ const DEFAULT_STATE: SettingsState = {
     toggleOverlay: 'CommandOrControl+\\',
     toggleAudio: 'CommandOrControl+Shift+Space',
     screenshotAsk: 'CommandOrControl+Shift+Return'
-  }
+  },
+  whisperProvider: 'groq',
+  whisperApiKey: '',
+  whisperApiUrl: '',
+  whisperModel: ''
 }
 
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_STATE)
   const [showApiKey, setShowApiKey] = useState(false)
+  const [showWhisperKey, setShowWhisperKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [validatingKey, setValidatingKey] = useState(false)
@@ -65,7 +75,11 @@ export default function Settings() {
         systemPrompt: all.systemPrompt || '',
         language: all.language || 'en',
         theme: all.theme || 'dark',
-        hotkeys: all.hotkeys || DEFAULT_STATE.hotkeys
+        hotkeys: all.hotkeys || DEFAULT_STATE.hotkeys,
+        whisperProvider: all.whisperProvider || 'groq',
+        whisperApiKey: all.whisperApiKey || '',
+        whisperApiUrl: all.whisperApiUrl || '',
+        whisperModel: all.whisperModel || ''
       })
     } catch (err) {
       console.error('Failed to load settings:', err)
@@ -86,6 +100,10 @@ export default function Settings() {
       await api.setSetting('language', settings.language)
       await api.setSetting('theme', settings.theme)
       await api.setSetting('hotkeys', settings.hotkeys)
+      await api.setSetting('whisperProvider', settings.whisperProvider)
+      await api.setSetting('whisperApiKey', settings.whisperApiKey)
+      await api.setSetting('whisperApiUrl', settings.whisperApiUrl)
+      await api.setSetting('whisperModel', settings.whisperModel)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
@@ -181,6 +199,112 @@ export default function Settings() {
             Get your API key from{' '}
             <span className="text-violet-400/60">openrouter.ai/keys</span>
           </p>
+        </div>
+      </section>
+
+      {/* Audio Transcription (Whisper) */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 text-white/60">
+          <Mic className="w-4 h-4 text-violet-400" />
+          <h3 className="text-sm font-medium">Audio Transcription (Whisper)</h3>
+        </div>
+        <div className="space-y-4">
+          <p className="text-white/30 text-xs leading-relaxed">
+            Audio transcription requires a Whisper-compatible API.
+            Groq offers a <strong className="text-white/50">free</strong> Whisper endpoint &mdash;
+            get a key at <span className="text-violet-400/60">console.groq.com</span>
+          </p>
+
+          {/* Provider selector */}
+          <div>
+            <label className="text-sm text-white/50 block mb-2">Transcription Provider</label>
+            <div className="flex gap-2">
+              {([
+                { value: 'groq', label: 'Groq (Free)', desc: 'whisper-large-v3-turbo' },
+                { value: 'openai', label: 'OpenAI', desc: 'whisper-1' },
+                { value: 'custom', label: 'Custom', desc: 'Your endpoint' }
+              ] as const).map((provider) => (
+                <button
+                  key={provider.value}
+                  onClick={() => updateSetting('whisperProvider', provider.value)}
+                  className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-colors text-left ${
+                    settings.whisperProvider === provider.value
+                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                      : 'bg-white/5 text-white/40 border border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="font-medium">{provider.label}</div>
+                  <div className="text-[10px] text-white/20 mt-0.5">{provider.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Whisper API Key */}
+          <div>
+            <label className="text-sm text-white/50 block mb-2">
+              {settings.whisperProvider === 'groq' ? 'Groq' : settings.whisperProvider === 'openai' ? 'OpenAI' : 'Whisper'} API Key
+            </label>
+            <div className="relative">
+              <input
+                type={showWhisperKey ? 'text' : 'password'}
+                value={settings.whisperApiKey}
+                onChange={(e) => updateSetting('whisperApiKey', e.target.value)}
+                placeholder={
+                  settings.whisperProvider === 'groq' ? 'gsk_...' :
+                  settings.whisperProvider === 'openai' ? 'sk-...' :
+                  'API key for your endpoint'
+                }
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                           text-white/90 placeholder-white/20 focus:border-violet-500/40
+                           focus:outline-none transition-colors"
+              />
+              <button
+                onClick={() => setShowWhisperKey(!showWhisperKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+              >
+                {showWhisperKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-white/20 text-xs mt-1.5">
+              {settings.whisperProvider === 'groq'
+                ? 'Free Groq API key from console.groq.com — generous free tier for Whisper.'
+                : settings.whisperProvider === 'openai'
+                  ? 'OpenAI API key from platform.openai.com. Whisper usage is billed separately.'
+                  : 'API key for your custom Whisper-compatible endpoint.'
+              }
+            </p>
+          </div>
+
+          {/* Custom endpoint fields */}
+          {settings.whisperProvider === 'custom' && (
+            <>
+              <div>
+                <label className="text-sm text-white/50 block mb-2">Custom Endpoint URL</label>
+                <input
+                  type="text"
+                  value={settings.whisperApiUrl}
+                  onChange={(e) => updateSetting('whisperApiUrl', e.target.value)}
+                  placeholder="https://your-api.example.com/v1/audio/transcriptions"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                             text-white/90 placeholder-white/20 focus:border-violet-500/40
+                             focus:outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-white/50 block mb-2">Model Name</label>
+                <input
+                  type="text"
+                  value={settings.whisperModel}
+                  onChange={(e) => updateSetting('whisperModel', e.target.value)}
+                  placeholder="whisper-1"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                             text-white/90 placeholder-white/20 focus:border-violet-500/40
+                             focus:outline-none transition-colors"
+                />
+              </div>
+            </>
+          )}
         </div>
       </section>
 
