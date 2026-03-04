@@ -33,9 +33,20 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Cache Electron
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-win-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-win-
       - run: npm ci
       - run: npm run build
-      - run: npx electron-builder --win --publish never
+      - name: Build Windows portable
+        run: npx electron-builder --win --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: specter-ai-windows
@@ -53,16 +64,26 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Cache Electron
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-mac-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-mac-
       - run: npm ci
       - run: npm run build
-      - run: npx electron-builder --mac --publish never
+      # Use --mac zip to skip DMG — hdiutil detach fails on GitHub Actions runners
+      - name: Build macOS app
+        run: npx electron-builder --mac zip --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: specter-ai-macos
           path: |
-            dist/*.dmg
             dist/*.zip
           retention-days: 30
 
@@ -76,9 +97,21 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Cache Electron
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-linux-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-linux-
       - run: npm ci
       - run: npm run build
-      - run: npx electron-builder --linux --publish never
+      - name: Build Linux packages
+        run: npx electron-builder --linux --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USE_HARD_LINKS: false
       - uses: actions/upload-artifact@v4
         with:
           name: specter-ai-linux
