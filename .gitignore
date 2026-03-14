@@ -150,3 +150,7 @@ CLAUDE.md
 .claude/skills/gstack/node_modules/
 .claude/skills/gstack/browse/dist/
 .claude/skills/gstack/bun.lock
+
+.claude/
+CLAUDE.md
+.agent/ 
