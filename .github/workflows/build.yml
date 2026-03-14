@@ -154,4 +154,4 @@ jobs:
             --generate-notes \
             --title "${{ github.ref_name }}"
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
