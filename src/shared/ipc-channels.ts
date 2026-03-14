@@ -5,6 +5,7 @@ export const IPC_CHANNELS = {
   SHOW_OVERLAY: 'overlay:show',
   HIDE_OVERLAY: 'overlay:hide',
   OVERLAY_READY: 'overlay:ready',
+  OVERLAY_SET_OPACITY: 'overlay:set-opacity',
 
   // AI
   AI_QUERY: 'ai:query',
@@ -39,6 +40,7 @@ export const IPC_CHANNELS = {
   HOTKEY_ASK_WITH_SCREENSHOT: 'hotkey:ask-with-screenshot',
   HOTKEY_TOGGLE_AUDIO: 'hotkey:toggle-audio',
   HOTKEY_TOGGLE_OVERLAY: 'hotkey:toggle-overlay',
+  HOTKEY_REREGISTER: 'hotkey:reregister',
 
   // Dashboard
   OPEN_DASHBOARD: 'dashboard:open',
@@ -48,6 +50,9 @@ export const IPC_CHANNELS = {
   CONTEXT_GET: 'context:get',
   CONTEXT_SCREEN_TEXT: 'context:screen-text',
   CONTEXT_TRANSCRIPT: 'context:transcript',
+
+  // Auto-capture
+  AUTO_CAPTURE_UPDATE: 'auto-capture:update',
 
   // Conversations
   CONVERSATIONS_LIST: 'conversations:list',

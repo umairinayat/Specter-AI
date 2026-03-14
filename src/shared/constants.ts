@@ -96,7 +96,8 @@ export const DEFAULT_SETTINGS = {
   whisperProvider: 'groq' as 'groq' | 'openai' | 'custom',
   whisperApiKey: '',        // separate key for Whisper (Groq key or OpenAI key)
   whisperApiUrl: '',        // only used when provider is 'custom'
-  whisperModel: ''          // only used when provider is 'custom'
+  whisperModel: '',         // only used when provider is 'custom'
+  autoHideDelay: 0          // seconds, 0 = disabled
 }
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'

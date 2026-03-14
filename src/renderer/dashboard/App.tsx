@@ -1,5 +1,5 @@
 // Dashboard App — Settings and configuration UI for Specter AI
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Settings as SettingsIcon, Cpu, BookOpen, MessageSquare, Ghost, Zap } from 'lucide-react'
 import SettingsPage from './pages/Settings'
 import ModelsPage from './pages/Models'
@@ -24,8 +24,15 @@ const NAV_ITEMS: Array<{ id: Page; label: string; icon: typeof SettingsIcon }> =
 export default function App() {
   const [activePage, setActivePage] = useState<Page>('settings')
 
+  // Load and apply theme from settings
+  useEffect(() => {
+    window.specterAPI?.getSetting<'dark' | 'light' | 'glass'>('theme').then((t) => {
+      document.documentElement.setAttribute('data-theme', t || 'dark')
+    })
+  }, [])
+
   return (
-    <div className="flex h-screen bg-specter-darker text-white">
+    <div className="flex h-screen" style={{ background: 'var(--specter-bg-deeper)', color: 'var(--specter-text)' }}>
       {/* Sidebar */}
       <nav className="dashboard-sidebar w-56 flex flex-col shrink-0">
         {/* Logo area */}

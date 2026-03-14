@@ -650,3 +650,32 @@ When continuing this project in a new chat, paste this summary:
 ---
 
 *Generated: 2026-03-01 | For open-source release under MIT License*
+
+---
+
+## gstack
+
+This project uses [gstack](https://github.com/garrytan/gstack) for browser automation, code review, shipping, and QA workflows.
+
+**Web browsing:** Always use the `/browse` skill from gstack for all web browsing tasks. NEVER use `mcp__claude-in-chrome__*` tools — they are slow, unreliable, and not what this project uses.
+
+### Available skills
+
+| Skill | Description |
+|---|---|
+| `/browse` | Headless browser automation (web browsing, screenshots, interaction) |
+| `/plan-ceo-review` | CEO-level review of project plans |
+| `/plan-eng-review` | Engineering review of project plans |
+| `/review` | Code review workflow |
+| `/ship` | Ship/deploy workflow |
+| `/qa` | QA and testing workflow |
+| `/setup-browser-cookies` | Set up browser cookies for authenticated browsing |
+| `/retro` | Retrospective workflow |
+
+### Troubleshooting
+
+If gstack skills aren't working, rebuild the binary and re-register skills:
+
+```bash
+cd .claude/skills/gstack && ./setup
+```

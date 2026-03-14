@@ -4,14 +4,7 @@ import {
   BookOpen, Plus, Trash2, FileText, ToggleLeft, ToggleRight,
   Upload, X, Save, Loader2, AlertCircle
 } from 'lucide-react'
-
-interface Playbook {
-  id: string
-  name: string
-  content: string
-  isActive: boolean
-  createdAt: number
-}
+import type { Playbook } from '../../../shared/types'
 
 export default function Playbooks() {
   const [playbooks, setPlaybooks] = useState<Playbook[]>([])
@@ -185,7 +178,7 @@ export default function Playbooks() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,.pdf,.csv,.json"
+              accept=".txt,.md,.csv,.json"
               onChange={handleFileUpload}
               className="hidden"
             />

@@ -135,8 +135,18 @@ temp/
 # Windows reserved-name artifact (should never exist as a real file)
 NUL
 
+# Build output (alternate directory used when dist/ is locked by AV)
+dist-new/
+
 # AI/IDE agent tooling data
 .gemini/
 
 CLAUDE.md
 .agent/
+
+# ──────────────────────────────────────────
+# gstack (teammates run .claude/skills/gstack/setup after cloning)
+# ──────────────────────────────────────────
+.claude/skills/gstack/node_modules/
+.claude/skills/gstack/browse/dist/
+.claude/skills/gstack/bun.lock

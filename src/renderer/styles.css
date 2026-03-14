@@ -2,10 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ── Theme system ── */
+/* Default: dark theme */
+:root,
+[data-theme="dark"] {
   --specter-violet: #7C3AED;
-  --specter-dark: #0a0a0f;
-  --specter-darker: #050508;
+  --specter-bg: #0a0a0f;
+  --specter-bg-deeper: #050508;
+  --specter-surface: rgba(10, 10, 15, 0.85);
+  --specter-surface-hover: rgba(255, 255, 255, 0.04);
+  --specter-border: rgba(255, 255, 255, 0.10);
+  --specter-text: rgba(255, 255, 255, 0.90);
+  --specter-text-secondary: rgba(255, 255, 255, 0.60);
+  --specter-text-muted: rgba(255, 255, 255, 0.30);
+  --specter-input-bg: rgba(255, 255, 255, 0.05);
+  --specter-scroll-thumb: rgba(255, 255, 255, 0.1);
+  --specter-scroll-thumb-hover: rgba(255, 255, 255, 0.2);
+  --specter-user-bubble: rgba(124, 58, 237, 0.15);
+  --specter-assistant-bubble: rgba(255, 255, 255, 0.05);
+  --specter-code-bg: rgba(0, 0, 0, 0.30);
+  --specter-sidebar-bg: rgba(10, 10, 15, 0.95);
+  --specter-content-bg: rgba(15, 15, 22, 0.98);
+  --specter-backdrop-blur: blur(24px) saturate(180%);
+}
+
+[data-theme="light"] {
+  --specter-violet: #7C3AED;
+  --specter-bg: #f5f5f7;
+  --specter-bg-deeper: #e8e8ec;
+  --specter-surface: rgba(255, 255, 255, 0.90);
+  --specter-surface-hover: rgba(0, 0, 0, 0.04);
+  --specter-border: rgba(0, 0, 0, 0.12);
+  --specter-text: rgba(0, 0, 0, 0.87);
+  --specter-text-secondary: rgba(0, 0, 0, 0.60);
+  --specter-text-muted: rgba(0, 0, 0, 0.35);
+  --specter-input-bg: rgba(0, 0, 0, 0.04);
+  --specter-scroll-thumb: rgba(0, 0, 0, 0.15);
+  --specter-scroll-thumb-hover: rgba(0, 0, 0, 0.25);
+  --specter-user-bubble: rgba(124, 58, 237, 0.12);
+  --specter-assistant-bubble: rgba(0, 0, 0, 0.04);
+  --specter-code-bg: rgba(0, 0, 0, 0.06);
+  --specter-sidebar-bg: rgba(245, 245, 247, 0.95);
+  --specter-content-bg: rgba(255, 255, 255, 0.98);
+  --specter-backdrop-blur: blur(24px) saturate(180%);
+}
+
+[data-theme="glass"] {
+  --specter-violet: #7C3AED;
+  --specter-bg: transparent;
+  --specter-bg-deeper: transparent;
+  --specter-surface: rgba(10, 10, 15, 0.50);
+  --specter-surface-hover: rgba(255, 255, 255, 0.06);
+  --specter-border: rgba(255, 255, 255, 0.12);
+  --specter-text: rgba(255, 255, 255, 0.95);
+  --specter-text-secondary: rgba(255, 255, 255, 0.65);
+  --specter-text-muted: rgba(255, 255, 255, 0.35);
+  --specter-input-bg: rgba(255, 255, 255, 0.06);
+  --specter-scroll-thumb: rgba(255, 255, 255, 0.12);
+  --specter-scroll-thumb-hover: rgba(255, 255, 255, 0.22);
+  --specter-user-bubble: rgba(124, 58, 237, 0.20);
+  --specter-assistant-bubble: rgba(255, 255, 255, 0.06);
+  --specter-code-bg: rgba(0, 0, 0, 0.40);
+  --specter-sidebar-bg: rgba(10, 10, 15, 0.60);
+  --specter-content-bg: rgba(15, 15, 22, 0.65);
+  --specter-backdrop-blur: blur(40px) saturate(200%);
 }
 
 /* Scrollbar styling */
@@ -16,24 +76,20 @@
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--specter-scroll-thumb);
   border-radius: 999px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--specter-scroll-thumb-hover);
 }
 
-/* Glass morphism utilities */
+/* Glass morphism utilities — no box-shadow/drop-shadow to avoid screen-capture artifacts */
 .glass {
-  background: rgba(10, 10, 15, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--specter-surface);
 }
 
 .glass-light {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--specter-surface-hover);
 }
 
 /* Animations */
@@ -66,9 +122,10 @@
   animation: shimmer 2s infinite;
 }
 
-/* Glow effects */
+/* Glow effects — disabled for overlay to prevent screen-capture shadow artifacts.
+   Only used in dashboard where capture protection is not needed. */
 .glow-violet {
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.15), 0 0 60px rgba(124, 58, 237, 0.05);
+  /* box-shadow removed: causes visible dark halo in screen share */
 }
 
 /* Focus ring */
@@ -87,12 +144,12 @@
 
 /* Dashboard styles */
 .dashboard-sidebar {
-  background: rgba(10, 10, 15, 0.95);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--specter-sidebar-bg);
+  border-right: 1px solid var(--specter-border);
 }
 
 .dashboard-content {
-  background: rgba(15, 15, 22, 0.98);
+  background: var(--specter-content-bg);
 }
 
 /* Input styling */
@@ -102,6 +159,58 @@ textarea,
 select {
   font-family: inherit;
 }
+
+/* ── Light theme overrides for Tailwind white-based classes ── */
+/* In dark/glass themes, text-white/XX works correctly.
+   In light theme, we need these to become dark text instead. */
+[data-theme="light"] .text-white\/90 { color: var(--specter-text) !important; }
+[data-theme="light"] .text-white\/85 { color: var(--specter-text) !important; }
+[data-theme="light"] .text-white\/80 { color: rgba(0, 0, 0, 0.78) !important; }
+[data-theme="light"] .text-white\/70 { color: rgba(0, 0, 0, 0.68) !important; }
+[data-theme="light"] .text-white\/60 { color: var(--specter-text-secondary) !important; }
+[data-theme="light"] .text-white\/50 { color: rgba(0, 0, 0, 0.50) !important; }
+[data-theme="light"] .text-white\/40 { color: var(--specter-text-muted) !important; }
+[data-theme="light"] .text-white\/30 { color: rgba(0, 0, 0, 0.30) !important; }
+[data-theme="light"] .text-white\/20 { color: rgba(0, 0, 0, 0.22) !important; }
+[data-theme="light"] .text-white\/15 { color: rgba(0, 0, 0, 0.18) !important; }
+[data-theme="light"] .text-white\/10 { color: rgba(0, 0, 0, 0.12) !important; }
+
+[data-theme="light"] .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04) !important; }
+[data-theme="light"] .bg-white\/10 { background-color: rgba(0, 0, 0, 0.07) !important; }
+[data-theme="light"] .bg-white\/\[0\.02\] { background-color: rgba(0, 0, 0, 0.02) !important; }
+[data-theme="light"] .bg-white\/\[0\.03\] { background-color: rgba(0, 0, 0, 0.03) !important; }
+[data-theme="light"] .bg-white\/\[0\.04\] { background-color: rgba(0, 0, 0, 0.04) !important; }
+
+[data-theme="light"] .border-white\/5 { border-color: rgba(0, 0, 0, 0.06) !important; }
+[data-theme="light"] .border-white\/10 { border-color: var(--specter-border) !important; }
+[data-theme="light"] .border-white\/20 { border-color: rgba(0, 0, 0, 0.18) !important; }
+
+[data-theme="light"] .placeholder-white\/20::placeholder { color: rgba(0, 0, 0, 0.30) !important; }
+
+[data-theme="light"] .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
+[data-theme="light"] .hover\:bg-white\/10:hover { background-color: rgba(0, 0, 0, 0.07) !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
+
+[data-theme="light"] .hover\:text-white\/50:hover { color: rgba(0, 0, 0, 0.50) !important; }
+[data-theme="light"] .hover\:text-white\/60:hover { color: rgba(0, 0, 0, 0.55) !important; }
+[data-theme="light"] .hover\:text-white\/70:hover { color: rgba(0, 0, 0, 0.65) !important; }
+[data-theme="light"] .hover\:text-white\/80:hover { color: rgba(0, 0, 0, 0.75) !important; }
+
+[data-theme="light"] .hover\:border-white\/20:hover { border-color: rgba(0, 0, 0, 0.18) !important; }
+[data-theme="light"] .hover\:border-white\/10:hover { border-color: rgba(0, 0, 0, 0.12) !important; }
+
+[data-theme="light"] .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); }
+[data-theme="light"] .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+
+/* Light theme select dropdown — fix dark text on dark bg issue */
+[data-theme="light"] select option {
+  background-color: #fff;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* Light theme — fix specific dark bg elements */
+[data-theme="light"] .bg-specter-dark\/90 { background-color: rgba(255, 255, 255, 0.92) !important; }
+[data-theme="light"] .bg-black\/30 { background-color: rgba(0, 0, 0, 0.06) !important; }
 
 /* Tooltip */
 .tooltip {

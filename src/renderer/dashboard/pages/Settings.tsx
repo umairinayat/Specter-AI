@@ -1,5 +1,5 @@
 // Settings page — API key, hotkeys, overlay config, audio transcription, system prompt
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Key, Eye, EyeOff, Keyboard, Monitor, Sliders, MessageSquare,
   Save, RotateCcw, CheckCircle, AlertCircle, Loader2, Mic
@@ -25,6 +25,7 @@ interface SettingsState {
   whisperApiKey: string
   whisperApiUrl: string
   whisperModel: string
+  autoHideDelay: number
 }
 
 const DEFAULT_STATE: SettingsState = {
@@ -45,7 +46,8 @@ const DEFAULT_STATE: SettingsState = {
   whisperProvider: 'groq',
   whisperApiKey: '',
   whisperApiUrl: '',
-  whisperModel: ''
+  whisperModel: '',
+  autoHideDelay: 0
 }
 
 export default function Settings() {
@@ -57,6 +59,10 @@ export default function Settings() {
   const [validatingKey, setValidatingKey] = useState(false)
   const [keyValid, setKeyValid] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Hotkey recording state
+  const [recordingHotkey, setRecordingHotkey] = useState<keyof SettingsState['hotkeys'] | null>(null)
+  const hotkeyRecorderRef = useRef<HTMLButtonElement | null>(null)
 
   // Load settings on mount
   useEffect(() => {
@@ -79,7 +85,8 @@ export default function Settings() {
         whisperProvider: all.whisperProvider || 'groq',
         whisperApiKey: all.whisperApiKey || '',
         whisperApiUrl: all.whisperApiUrl || '',
-        whisperModel: all.whisperModel || ''
+        whisperModel: all.whisperModel || '',
+        autoHideDelay: typeof all.autoHideDelay === 'number' ? all.autoHideDelay : 0
       })
     } catch (err) {
       console.error('Failed to load settings:', err)
@@ -104,6 +111,7 @@ export default function Settings() {
       await api.setSetting('whisperApiKey', settings.whisperApiKey)
       await api.setSetting('whisperApiUrl', settings.whisperApiUrl)
       await api.setSetting('whisperModel', settings.whisperModel)
+      await api.setSetting('autoHideDelay', settings.autoHideDelay)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
@@ -135,6 +143,74 @@ export default function Settings() {
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }))
+  }
+
+  /**
+   * Convert a KeyboardEvent into an Electron accelerator string.
+   * e.g. Ctrl+Shift+A, CommandOrControl+Return
+   */
+  const keyEventToAccelerator = useCallback((e: KeyboardEvent): string | null => {
+    // Ignore lone modifier presses
+    if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return null
+
+    const parts: string[] = []
+    if (e.ctrlKey || e.metaKey) parts.push('CommandOrControl')
+    if (e.shiftKey) parts.push('Shift')
+    if (e.altKey) parts.push('Alt')
+
+    // Must have at least one modifier
+    if (parts.length === 0) return null
+
+    // Map special keys to Electron names
+    const keyMap: Record<string, string> = {
+      Enter: 'Return', Backspace: 'Backspace', Delete: 'Delete', Tab: 'Tab',
+      Escape: 'Escape', ' ': 'Space', ArrowUp: 'Up', ArrowDown: 'Down',
+      ArrowLeft: 'Left', ArrowRight: 'Right', '\\': '\\', '/': '/',
+      '-': '-', '=': '=', '[': '[', ']': ']', ';': ';', "'": "'",
+      ',': ',', '.': '.', '`': '`'
+    }
+
+    let key = keyMap[e.key] || e.key.toUpperCase()
+    // Function keys (F1-F24)
+    if (/^F\d{1,2}$/.test(e.key)) key = e.key
+
+    parts.push(key)
+    return parts.join('+')
+  }, [])
+
+  // Hotkey recording: listen for key combos when recording
+  useEffect(() => {
+    if (!recordingHotkey) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      // Escape cancels recording
+      if (e.key === 'Escape') {
+        setRecordingHotkey(null)
+        return
+      }
+
+      const accelerator = keyEventToAccelerator(e)
+      if (accelerator) {
+        setSettings(prev => ({
+          ...prev,
+          hotkeys: { ...prev.hotkeys, [recordingHotkey]: accelerator }
+        }))
+        setRecordingHotkey(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [recordingHotkey, keyEventToAccelerator])
+
+  /** Format an Electron accelerator for display */
+  const formatAccelerator = (accel: string): string => {
+    return accel
+      .replace('CommandOrControl', 'Ctrl')
+      .replace('Return', 'Enter')
   }
 
   return (
@@ -354,6 +430,28 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Auto-hide */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <label className="text-sm text-white/50">Auto-hide Overlay</label>
+                <p className="text-xs text-white/20 mt-0.5">Minimize overlay after inactivity (0 = disabled)</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                max="300"
+                value={settings.autoHideDelay}
+                onChange={(e) => updateSetting('autoHideDelay', parseInt(e.target.value) || 0)}
+                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                           text-white/90 focus:border-violet-500/40 focus:outline-none w-24"
+              />
+              <span className="text-xs text-white/30">seconds</span>
+            </div>
+          </div>
+
           {/* Language */}
           <div>
             <label className="text-sm text-white/50 block mb-2">Transcription Language</label>
@@ -445,6 +543,7 @@ export default function Settings() {
           <Keyboard className="w-4 h-4 text-violet-400" />
           <h3 className="text-sm font-medium">Keyboard Shortcuts</h3>
         </div>
+        <p className="text-white/20 text-xs">Click a shortcut to record a new key combination. Press Escape to cancel.</p>
         <div className="space-y-3">
           {([
             { key: 'askAI' as const, label: 'Ask AI', desc: 'Trigger AI with current context' },
@@ -457,10 +556,21 @@ export default function Settings() {
                 <p className="text-sm text-white/60">{item.label}</p>
                 <p className="text-xs text-white/20">{item.desc}</p>
               </div>
-              <kbd className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50
-                             text-xs font-mono">
-                {settings.hotkeys[item.key].replace('CommandOrControl', 'Ctrl').replace('Return', 'Enter')}
-              </kbd>
+              <button
+                ref={recordingHotkey === item.key ? hotkeyRecorderRef : undefined}
+                onClick={() => setRecordingHotkey(recordingHotkey === item.key ? null : item.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
+                  recordingHotkey === item.key
+                    ? 'bg-violet-500/30 border border-violet-500/60 text-violet-300 animate-pulse'
+                    : 'bg-white/5 border border-white/10 text-white/50 hover:border-violet-500/30 hover:text-white/70'
+                }`}
+                title={recordingHotkey === item.key ? 'Press a key combo or Escape to cancel' : 'Click to change shortcut'}
+              >
+                {recordingHotkey === item.key
+                  ? 'Press keys...'
+                  : formatAccelerator(settings.hotkeys[item.key])
+                }
+              </button>
             </div>
           ))}
         </div>

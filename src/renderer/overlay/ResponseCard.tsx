@@ -2,15 +2,8 @@
 import { memo, useState, useCallback, useMemo } from 'react'
 import { User, Bot, Copy, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-
-interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: number
-  tokenCount?: number
-  cost?: number
-}
+import rehypeSanitize from 'rehype-sanitize'
+import type { Message } from '../../shared/types'
 
 interface ResponseCardProps {
   message: Message
@@ -39,6 +32,7 @@ function ResponseCard({ message, isStreaming = false }: ResponseCardProps) {
 
     return (
       <ReactMarkdown
+        rehypePlugins={[rehypeSanitize]}
         components={{
           // Headings
           h1: ({ children }) => <h1 className="text-base font-bold text-white/90 mt-3 mb-1">{children}</h1>,
@@ -95,11 +89,19 @@ function ResponseCard({ message, isStreaming = false }: ResponseCardProps) {
           // Horizontal rule
           hr: () => <hr className="border-white/10 my-3" />,
 
-          // Links
+          // Links — open in external browser
           a: ({ children, href }) => (
-            <span className="text-violet-400/80 underline underline-offset-2" title={href}>
+            <a
+              href={href}
+              className="text-violet-400/80 underline underline-offset-2 cursor-pointer hover:text-violet-300 transition-colors"
+              title={href}
+              onClick={(e) => {
+                e.preventDefault()
+                if (href) window.specterAPI?.openExternal(href)
+              }}
+            >
               {children}
-            </span>
+            </a>
           ),
 
           // Tables

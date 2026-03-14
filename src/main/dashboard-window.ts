@@ -1,5 +1,5 @@
 // Dashboard window — settings and configuration UI
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, shell } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
 
@@ -22,8 +22,9 @@ export function createDashboardWindow(): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: true,
       preload: path.join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false // Required: @electron-toolkit/preload uses Node APIs in preload
     }
   })
 
@@ -36,6 +37,22 @@ export function createDashboardWindow(): BrowserWindow {
   } else {
     dashboardWindow.loadFile(path.join(__dirname, '../renderer/dashboard/index.html'))
   }
+
+  // --- Security: block navigation and new windows ---
+  dashboardWindow.webContents.on('will-navigate', (event, url) => {
+    if (is.dev && process.env['ELECTRON_RENDERER_URL'] && url.startsWith(process.env['ELECTRON_RENDERER_URL'])) {
+      return
+    }
+    console.warn('[Specter] Blocked dashboard navigation to:', url)
+    event.preventDefault()
+  })
+
+  dashboardWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) {
+      shell.openExternal(url).catch(() => {})
+    }
+    return { action: 'deny' }
+  })
 
   return dashboardWindow
 }

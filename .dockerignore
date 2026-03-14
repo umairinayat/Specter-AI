@@ -1,0 +1,30 @@
+# Dependencies (reinstalled inside container)
+node_modules/
+
+# Build output
+out/
+dist/
+dist-new/
+
+# Git
+.git/
+.gitignore
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# gstack skills (not needed for build)
+.claude/
+
+# Electron caches
+*.asar

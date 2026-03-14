@@ -1,8 +1,7 @@
 // Specter AI — Main process entry point
-import { app, BrowserWindow } from 'electron'
-import { electronApp, optimizer } from '@electron-toolkit/utils'
-import { createOverlayWindow, getOverlayWindow } from './overlay-window'
-import { createDashboardWindow } from './dashboard-window'
+import { app, BrowserWindow, shell } from 'electron'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { createOverlayWindow, getOverlayWindow, showOverlay } from './overlay-window'
 import { createTray, destroyTray } from './tray'
 import { registerHotkeys, unregisterAllHotkeys } from './hotkey-manager'
 import { registerIpcHandlers } from './ipc-handlers'
@@ -34,6 +33,26 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  // --- Security: global navigation policy for all web contents ---
+  // This is a catch-all; individual windows also have their own handlers.
+  app.on('web-contents-created', (_, contents) => {
+    contents.on('will-navigate', (event, url) => {
+      // Allow dev server HMR reloads
+      if (is.dev && process.env['ELECTRON_RENDERER_URL'] && url.startsWith(process.env['ELECTRON_RENDERER_URL'])) {
+        return
+      }
+      console.warn('[Specter] Global policy blocked navigation to:', url)
+      event.preventDefault()
+    })
+
+    contents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith('https://')) {
+        shell.openExternal(url).catch(() => {})
+      }
+      return { action: 'deny' }
+    })
+  })
+
   // Create the overlay window
   const overlay = createOverlayWindow()
 
@@ -42,6 +61,11 @@ app.whenReady().then(() => {
 
   // Register global hotkeys
   registerHotkeys(overlay)
+
+  // NOTE: Screen share detector was removed — it was incorrectly hiding the overlay
+  // whenever meeting apps (Zoom, Teams, Chrome) were simply running.
+  // The overlay is already invisible to screen capture via setContentProtection(true)
+  // on Windows and type:'panel' on macOS. No additional hiding is needed.
 
   // Create system tray
   createTray()
@@ -52,7 +76,7 @@ app.whenReady().then(() => {
       createOverlayWindow()
     } else {
       const ov = getOverlayWindow()
-      if (ov) ov.show()
+      if (ov) showOverlay({ focus: true })
     }
   })
 })
@@ -61,8 +85,7 @@ app.whenReady().then(() => {
 app.on('second-instance', () => {
   const overlay = getOverlayWindow()
   if (overlay) {
-    overlay.show()
-    overlay.focus()
+    showOverlay({ focus: true })
   }
 })
 

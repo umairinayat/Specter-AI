@@ -4,22 +4,7 @@ import {
   MessageSquare, Trash2, Clock, ChevronRight, Search,
   Bot, User, X
 } from 'lucide-react'
-
-interface Message {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  timestamp: number
-}
-
-interface Conversation {
-  id: string
-  title: string
-  messages: Message[]
-  model: string
-  createdAt: number
-  updatedAt: number
-}
+import type { Message, Conversation } from '../../../shared/types'
 
 export default function History() {
   const [conversations, setConversations] = useState<Conversation[]>([])

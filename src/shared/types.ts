@@ -18,6 +18,13 @@ export interface UserSettings {
   systemPrompt: string
   language: string
   theme: 'dark' | 'light' | 'glass'
+  // Whisper / audio transcription
+  whisperProvider: 'groq' | 'openai' | 'custom'
+  whisperApiKey: string
+  whisperApiUrl: string
+  whisperModel: string
+  // UX
+  autoHideDelay: number // seconds, 0 = disabled
 }
 
 export interface OpenRouterModel {
@@ -56,23 +63,10 @@ export interface ContextSnapshot {
   screenshot?: string // base64
 }
 
-export interface AIQueryRequest {
-  query: string
-  includeScreen: boolean
-  includeAudio: boolean
-  conversationId?: string
-}
-
-export interface StreamChunk {
-  content: string
-  done: boolean
-  error?: string
-}
-
 export interface AudioStatus {
   isRecording: boolean
   duration: number
-  hasTranscript: boolean
+  error?: string
 }
 
 export interface ScreenCaptureResult {

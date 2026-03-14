@@ -58,8 +58,8 @@ Think of it as a free, open-source, privacy-first alternative to Cluely.
 - Smart context: sends screen text as part of your AI prompt
 
 ### Live Audio Transcription
-- Records microphone audio in real time via `mic` package
-- Transcribes every 10 seconds using OpenAI Whisper API
+- Records microphone audio in real time via the Web MediaRecorder API
+- Transcribes every 10 seconds using configurable Whisper provider (Groq, OpenAI, or custom endpoint)
 - Rolling transcript buffer (last ~60s of conversation) fed into AI context
 
 ### AI Integration
@@ -186,7 +186,7 @@ specter-ai/
 ```
 Screen -> screenshot-desktop -> Tesseract.js (worker thread) -> OCR text -\
                                                                            |-> context-builder -> OpenRouter API -> streaming response -> overlay
-Microphone -> mic package -> Whisper API -> transcript text --------------/
+Microphone -> MediaRecorder API -> Whisper (Groq/OpenAI/custom) -> transcript text --------------/
 ```
 
 ### Privacy Model
@@ -194,7 +194,7 @@ Microphone -> mic package -> Whisper API -> transcript text --------------/
 - **All processing is local** except the AI API call to OpenRouter
 - OCR text and transcript are sent to OpenRouter only when the user triggers a query
 - No telemetry, no analytics, no data collection
-- API key is stored locally in `electron-store` with obfuscation
+- API key is encrypted locally via Electron `safeStorage` (OS keychain on macOS, DPAPI on Windows, libsecret on Linux)
 - Raw audio and screenshots are never sent anywhere -- only extracted text
 
 ---
@@ -292,11 +292,9 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Known Limitations
 
-- **Whisper transcription** uses the OpenAI Whisper API directly (`api.openai.com`), which requires an OpenAI API key. This may not work with OpenRouter-only keys.
+- **Whisper transcription** supports Groq (fastest, recommended), OpenAI, and custom endpoints. Configure the provider and API key in Settings.
 - **Windows screen protection** hides the overlay from all capture, including the user's own screenshots.
 - **Linux screen share exclusion** is unreliable on Wayland compositors.
-- **`zustand` is installed but unused** -- state is currently managed via React hooks + `electron-store`. Future refactor may adopt Zustand.
-- **Store encryption key is hardcoded** -- provides obfuscation, not true security. API keys should be treated as stored in plaintext.
 
 ---
 

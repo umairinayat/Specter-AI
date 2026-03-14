@@ -75,6 +75,13 @@ export function cancelStream(): void {
   }
 }
 
+// Cache of fetched models for pricing lookups
+let cachedModels: OpenRouterModel[] = []
+
+export function getCachedModels(): OpenRouterModel[] {
+  return cachedModels
+}
+
 export async function fetchAvailableModels(apiKey: string): Promise<OpenRouterModel[]> {
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/models`, {
@@ -86,13 +93,15 @@ export async function fetchAvailableModels(apiKey: string): Promise<OpenRouterMo
     }
 
     const data = await response.json()
-    return (data.data || []).map((m: Record<string, unknown>) => ({
+    const models = (data.data || []).map((m: Record<string, unknown>) => ({
       id: m.id as string,
       name: (m.name as string) || (m.id as string),
       pricing: m.pricing as { prompt: string; completion: string },
       context_length: (m.context_length as number) || 4096,
       description: (m.description as string) || ''
     }))
+    cachedModels = models
+    return models
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch models'
     throw new Error(message)

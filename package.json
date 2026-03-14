@@ -1,6 +1,6 @@
 {
   "name": "specter-ai",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Open-source AI screen & meeting copilot — invisible overlay powered by OpenRouter",
   "main": "./out/main/index.js",
   "homepage": "https://github.com/umairinayat/Specter-AI",
@@ -27,11 +27,13 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
-    "build:all": "npm run build && electron-builder --win --mac --linux"
+    "build:all": "npm run build && electron-builder --win --mac --linux",
+    "build:docker": "docker build -t specter-ai:latest -f Dockerfile ."
   },
   "build": {
     "appId": "com.specter.ai",
     "productName": "Specter AI",
+    "electronVersion": "34.3.1",
     "copyright": "Copyright (c) 2026 Specter AI",
     "directories": {
       "output": "dist",
@@ -130,16 +132,16 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
-    "@headlessui/react": "^2.2.0",
     "electron-store": "^8.2.0",
+    "koffi": "^2.15.2",
     "lucide-react": "^0.460.0",
     "openai": "^4.73.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
+    "rehype-sanitize": "^6.0.0",
     "screenshot-desktop": "^1.12.8",
-    "tesseract.js": "^5.1.1",
-    "zustand": "^4.5.5"
+    "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -148,7 +150,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "electron": "^33.2.0",
+    "electron": "^34.3.1",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "png-to-ico": "^3.0.1",
