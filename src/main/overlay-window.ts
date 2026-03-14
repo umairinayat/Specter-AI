@@ -5,7 +5,7 @@
 // to be silently ignored. We use Electron's setContentProtection(true) instead,
 // which works reliably with transparent windows.
 
-import { BrowserWindow, screen, shell } from 'electron'
+import { BrowserWindow, desktopCapturer, screen, shell } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSetting, setSetting } from '../services/store'
@@ -137,6 +137,27 @@ export function createOverlayWindow(): BrowserWindow {
   } else {
     overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay/index.html'))
   }
+
+  // --- System audio capture via desktopCapturer ---
+  // Auto-resolve getDisplayMedia requests with loopback audio so the renderer
+  // can capture system audio (interviewer's voice) without showing a picker dialog.
+  overlayWindow.webContents.session.setDisplayMediaRequestHandler(
+    async (_request, callback) => {
+      try {
+        const sources = await desktopCapturer.getSources({ types: ['screen'] })
+        if (sources.length > 0) {
+          callback({ video: sources[0], audio: 'loopback' })
+        } else {
+          // No screen sources found — deny the request
+          callback({})
+        }
+      } catch (err) {
+        console.error('[Specter] setDisplayMediaRequestHandler error:', err)
+        callback({})
+      }
+    },
+    { useSystemPicker: false }
+  )
 
   // --- Security: block all navigation and new windows ---
   overlayWindow.webContents.on('will-navigate', (event, url) => {

@@ -2,7 +2,7 @@
 
 export const APP_NAME = 'Specter AI'
 export const APP_ID = 'com.specter.ai'
-export const APP_VERSION = '1.0.0'
+export const APP_VERSION = '1.2.0'
 
 export const ACCENT_COLOR = '#7C3AED' // violet
 export const ACCENT_COLOR_RGB = '124, 58, 237'
@@ -14,11 +14,18 @@ export const OVERLAY_DEFAULTS = {
   margin: 20
 }
 
-export const DEFAULT_SYSTEM_PROMPT = `You are a real-time AI assistant helping the user during meetings, interviews, and work sessions.
-You have access to what's on their screen and what's being said.
-Give concise, immediately actionable responses.
-Format responses for quick reading: use short paragraphs and bullet points.
-Never reveal that you are an AI assistant unless directly asked.`
+export const DEFAULT_SYSTEM_PROMPT = `You are a real-time AI copilot for meetings, interviews, and work sessions.
+You have access to what's on the user's screen and what's being said.
+
+Rules:
+- Answer ONLY what is asked. Be direct and concise.
+- Do NOT add unnecessary explanations or filler.
+- For MCQs: give only the correct answer letter/option. Do not rewrite the question.
+- For coding questions: give optimal code, a 2-line explanation, and time/space complexity.
+- For behavioral/situational questions: give a structured response in 2-3 sentences.
+- For technical questions: give a clear, accurate answer in 2-4 sentences.
+- Format for quick reading: short paragraphs and bullet points.
+- Never reveal you are an AI assistant unless directly asked.`
 
 export const DEFAULT_HOTKEYS = {
   askAI: 'CommandOrControl+Return',
@@ -97,7 +104,8 @@ export const DEFAULT_SETTINGS = {
   whisperApiKey: '',        // separate key for Whisper (Groq key or OpenAI key)
   whisperApiUrl: '',        // only used when provider is 'custom'
   whisperModel: '',         // only used when provider is 'custom'
-  autoHideDelay: 0          // seconds, 0 = disabled
+  autoHideDelay: 0,          // seconds, 0 = disabled
+  smartCrop: false            // capture active window only (vs full screen)
 }
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'

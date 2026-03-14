@@ -25,6 +25,7 @@ export interface UserSettings {
   whisperModel: string
   // UX
   autoHideDelay: number // seconds, 0 = disabled
+  smartCrop: boolean    // capture active window only (vs full screen)
 }
 
 export interface OpenRouterModel {

@@ -84,22 +84,85 @@ export default function Playbooks() {
     setShowEditor(true)
   }, [])
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  /**
+   * Extract text from a PDF file using pdfjs-dist.
+   */
+  const extractPdfText = useCallback(async (file: File): Promise<string> => {
+    const pdfjsLib = await import('pdfjs-dist')
+
+    // Disable the worker — runs on the main thread (fine for small-medium PDFs in Electron)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+
+    const arrayBuffer = await file.arrayBuffer()
+    const pdf = await pdfjsLib.getDocument({
+      data: arrayBuffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    }).promise
+
+    const pageTexts: string[] = []
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i)
+      const textContent = await page.getTextContent()
+      const pageText = textContent.items
+        .map((item) => ('str' in item ? (item as { str: string }).str : ''))
+        .join(' ')
+      if (pageText.trim()) {
+        pageTexts.push(pageText.trim())
+      }
+    }
+
+    return pageTexts.join('\n\n')
+  }, [])
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const text = event.target?.result as string
-      setContent(text)
-      if (!name) {
-        setName(file.name.replace(/\.[^/.]+$/, ''))
+    setUploadError(null)
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf'
+
+    if (isPdf) {
+      setUploading(true)
+      try {
+        const text = await extractPdfText(file)
+        if (!text.trim()) {
+          setUploadError('Could not extract text from this PDF. It may be scanned/image-based.')
+          return
+        }
+        setContent(text)
+        if (!name) {
+          setName(file.name.replace(/\.[^/.]+$/, ''))
+        }
+      } catch (err) {
+        console.error('PDF extraction failed:', err)
+        setUploadError('Failed to read PDF. The file may be corrupted or password-protected.')
+      } finally {
+        setUploading(false)
       }
+    } else {
+      // Text-based files: .txt, .md, .csv, .json
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const text = event.target?.result as string
+        setContent(text)
+        if (!name) {
+          setName(file.name.replace(/\.[^/.]+$/, ''))
+        }
+      }
+      reader.onerror = () => {
+        setUploadError('Failed to read file.')
+      }
+      reader.readAsText(file)
     }
-    reader.readAsText(file)
+
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [name])
+  }, [name, extractPdfText])
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -178,19 +241,31 @@ export default function Playbooks() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,.csv,.json"
+              accept=".txt,.md,.csv,.json,.pdf"
               onChange={handleFileUpload}
               className="hidden"
             />
             <button
               onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 text-white/50
-                         text-sm hover:bg-white/10 hover:text-white/70 transition-colors"
+                         text-sm hover:bg-white/10 hover:text-white/70 disabled:opacity-30
+                         disabled:cursor-not-allowed transition-colors"
             >
-              <Upload className="w-4 h-4" />
-              Upload File
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploading ? 'Reading PDF...' : 'Upload File'}
             </button>
           </div>
+
+          {uploadError && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+              <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-400">{uploadError}</p>
+              <button onClick={() => setUploadError(null)} className="ml-auto p-0.5 text-red-400/50 hover:text-red-400">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -275,7 +350,7 @@ export default function Playbooks() {
         <div className="text-xs text-white/30 leading-relaxed">
           <p>Active playbooks are injected as additional context when you query the AI.</p>
           <p className="mt-1">
-            Supported formats: .txt, .md, .csv, .json. PDFs will be added in a future update.
+            Supported formats: .txt, .md, .csv, .json, .pdf
           </p>
         </div>
       </div>

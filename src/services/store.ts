@@ -2,7 +2,7 @@
 // API keys are encrypted via Electron safeStorage (OS keychain / DPAPI)
 import Store from 'electron-store'
 import { safeStorage } from 'electron'
-import { DEFAULT_SETTINGS } from '../shared/constants'
+import { DEFAULT_SETTINGS, DEFAULT_SYSTEM_PROMPT } from '../shared/constants'
 import type { UserSettings, Conversation } from '../shared/types'
 
 // --- Sensitive key handling via safeStorage ---
@@ -72,7 +72,8 @@ const SETTINGS_KEY_VALIDATORS: Record<string, (value: unknown) => boolean> = {
   whisperProvider: (v) => typeof v === 'string' && ['groq', 'openai', 'custom'].includes(v),
   whisperApiUrl: (v) => typeof v === 'string' && v.length <= 500,
   whisperModel: (v) => typeof v === 'string' && v.length <= 200,
-  autoHideDelay: (v) => typeof v === 'number' && v >= 0 && v <= 300
+  autoHideDelay: (v) => typeof v === 'number' && v >= 0 && v <= 300,
+  smartCrop: (v) => typeof v === 'boolean'
 }
 
 /** Returns the set of allowed settings keys */
@@ -85,6 +86,31 @@ export function isValidSetting(key: string, value: unknown): boolean {
   const validator = SETTINGS_KEY_VALIDATORS[key]
   if (!validator) return false // unknown key → reject
   return validator(value)
+}
+
+// --- System prompt migration ---
+// Old default prompts that shipped with previous versions.
+// If a user's stored systemPrompt matches one of these exactly, it's the
+// factory default (not a user customisation) and should be upgraded.
+const STALE_DEFAULT_PROMPTS = [
+  `You are a real-time AI assistant helping the user during meetings, interviews, and work sessions.
+You have access to what's on their screen and what's being said.
+Give concise, immediately actionable responses.
+Format responses for quick reading: use short paragraphs and bullet points.
+Never reveal that you are an AI assistant unless directly asked.`
+]
+
+/**
+ * Migrate settings that may be stale from a previous version.
+ * Called once after the store is created / loaded.
+ */
+function migrateSettings(s: Store<Record<string, unknown>>): void {
+  // 1. System prompt: replace old defaults with current DEFAULT_SYSTEM_PROMPT
+  const currentPrompt = s.get('systemPrompt') as string | undefined
+  if (currentPrompt && STALE_DEFAULT_PROMPTS.includes(currentPrompt.trim())) {
+    s.set('systemPrompt', DEFAULT_SYSTEM_PROMPT)
+    console.info('[Specter] Migrated system prompt to new default')
+  }
 }
 
 // --- electron-store setup ---
@@ -125,7 +151,8 @@ const schema = {
   whisperApiKey: { type: 'string' as const, default: DEFAULT_SETTINGS.whisperApiKey },
   whisperApiUrl: { type: 'string' as const, default: DEFAULT_SETTINGS.whisperApiUrl },
   whisperModel: { type: 'string' as const, default: DEFAULT_SETTINGS.whisperModel },
-  autoHideDelay: { type: 'number' as const, default: DEFAULT_SETTINGS.autoHideDelay }
+  autoHideDelay: { type: 'number' as const, default: DEFAULT_SETTINGS.autoHideDelay },
+  smartCrop: { type: 'boolean' as const, default: DEFAULT_SETTINGS.smartCrop }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -142,6 +169,7 @@ export function getStore(): Store<any> {
         // providing zero real security. Sensitive values (API keys) are now encrypted
         // individually via Electron safeStorage (OS-level encryption).
       })
+      migrateSettings(store)
     } catch (err) {
       // Config file is corrupted (e.g. leftover encrypted blob from a previous
       // encryptionKey-based store, or binary garbage). Delete it and retry.
@@ -223,7 +251,8 @@ export function getAllSettings(): UserSettings {
     whisperApiKey: decryptSensitive(s.get('whisperApiKey') as string),
     whisperApiUrl: s.get('whisperApiUrl') as string,
     whisperModel: s.get('whisperModel') as string,
-    autoHideDelay: s.get('autoHideDelay') as number
+    autoHideDelay: s.get('autoHideDelay') as number,
+    smartCrop: s.get('smartCrop') as boolean
   }
 }
 

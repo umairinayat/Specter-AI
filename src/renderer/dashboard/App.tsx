@@ -1,6 +1,7 @@
 // Dashboard App — Settings and configuration UI for Specter AI
 import { useState, useEffect } from 'react'
 import { Settings as SettingsIcon, Cpu, BookOpen, MessageSquare, Ghost, Zap } from 'lucide-react'
+import { APP_VERSION } from '../../shared/constants'
 import SettingsPage from './pages/Settings'
 import ModelsPage from './pages/Models'
 import PlaybooksPage from './pages/Playbooks'
@@ -75,7 +76,7 @@ export default function App() {
         <div className="px-5 py-4 border-t border-white/5">
           <div className="flex items-center gap-2 text-white/20 text-xs">
             <Zap className="w-3 h-3" />
-            <span>v1.0.0</span>
+            <span>v{APP_VERSION}</span>
           </div>
         </div>
       </nav>

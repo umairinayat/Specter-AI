@@ -172,7 +172,8 @@ export function registerIpcHandlers(overlayWindow: BrowserWindow): void {
     // Capture screen if requested
     if (args.includeScreen) {
       try {
-        const capture = await captureScreenText()
+        const smartCrop = getSetting<boolean>('smartCrop') || false
+        const capture = await captureScreenText(smartCrop)
         screenText = capture.text
       } catch (err: unknown) {
         console.warn('[Specter] Screen capture failed:', err)

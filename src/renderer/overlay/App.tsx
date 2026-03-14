@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import ResponseCard from './ResponseCard'
 import TranscriptBar from './TranscriptBar'
-import { Send, Mic, MicOff, Monitor, Settings, GripVertical, Minimize2, Maximize2, X, ScanSearch, Paperclip, Trash2, Clock, ChevronLeft, MessageSquare } from 'lucide-react'
+import MeetingRecorder from './MeetingRecorder'
+import { Send, Mic, MicOff, Monitor, Settings, GripVertical, Minimize2, Maximize2, X, ScanSearch, Paperclip, Trash2, Clock, ChevronLeft, MessageSquare, Power } from 'lucide-react'
 import type { StreamDoneData } from '../../preload/index'
 import type { Message, Conversation } from '../../shared/types'
 
@@ -460,6 +461,54 @@ export default function App() {
   }, [isCapturing, getMessageHistory])
 
   /**
+   * Submit meeting transcript to AI — called by MeetingRecorder after transcription.
+   * Auto-includes screen context so AI can see what's on screen alongside the transcript.
+   */
+  const submitMeetingTranscript = useCallback((meetingTranscript: string) => {
+    if (isStreamingRef.current) return
+    if (!meetingTranscript.trim()) return
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: `[Meeting Audio Transcript]\n${meetingTranscript}`,
+      timestamp: Date.now()
+    }
+
+    const history = getMessageHistory()
+
+    setMessages((prev) => [...prev, userMessage])
+    setQuery('')
+    setError(null)
+    setIsStreaming(true)
+    setStreamingContent('')
+    pendingCostRef.current = null
+
+    // Always include screen context for meeting recordings.
+    // Frame the transcript so the AI answers questions from BOTH screen and audio.
+    // Critical: do NOT ask the AI to "suggest responses" — that causes verbose etiquette advice.
+    const framedQuery = [
+      `MEETING AUDIO TRANSCRIPT: "${meetingTranscript}"`,
+      '',
+      'INSTRUCTIONS:',
+      '- Look at BOTH the screen content AND the transcript above.',
+      '- If there is a question on screen (e.g. interview question, MCQ, coding problem), answer it.',
+      '- If there is a question in the audio transcript, answer it.',
+      '- If the transcript is garbled or nonsensical, ignore it and focus on the screen.',
+      '- If there is NO question in either the screen or transcript, respond ONLY with: "No question detected."',
+      '- Do NOT provide social etiquette advice, meta-commentary, or transcription analysis.',
+      '- Follow system prompt rules strictly (concise answers, MCQ format, coding format, etc.).'
+    ].join('\n')
+
+    window.specterAPI?.queryAI(
+      framedQuery,
+      true, // include screen — so AI sees what the interviewer is showing
+      false, // audio transcript is already in the query
+      history
+    )
+  }, [getMessageHistory])
+
+  /**
    * Attach a screenshot to the next message (preview it first).
    */
   const attachScreenshot = useCallback(async () => {
@@ -662,7 +711,7 @@ export default function App() {
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2">
         <button
           onClick={() => setIsMinimized(false)}
           className="specter-pill group flex items-center gap-2 px-4 py-2 rounded-full
@@ -672,6 +721,14 @@ export default function App() {
           <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
           <span className="text-white/80 text-sm font-medium">Specter</span>
           <Maximize2 className="w-3 h-3 text-white/50 group-hover:text-white/80 transition-colors" />
+        </button>
+        <button
+          onClick={() => window.specterAPI?.quit()}
+          className="p-2 rounded-full bg-specter-dark/90 border border-white/10
+                     hover:border-red-500/40 hover:bg-red-500/10 transition-all duration-300"
+          title="Quit Specter"
+        >
+          <Power className="w-3.5 h-3.5 text-white/40 hover:text-red-400" />
         </button>
       </div>
     )
@@ -731,6 +788,13 @@ export default function App() {
             title="Minimize to pill"
           >
             <Minimize2 className="w-3.5 h-3.5 text-white/40 hover:text-white/70" />
+          </button>
+          <button
+            onClick={() => window.specterAPI?.quit()}
+            className="p-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+            title="Quit Specter"
+          >
+            <Power className="w-3.5 h-3.5 text-white/40 hover:text-red-400" />
           </button>
         </div>
       </div>
@@ -860,11 +924,17 @@ export default function App() {
                          bg-violet-500/20 text-violet-300 border border-violet-500/30
                          hover:bg-violet-500/30 hover:border-violet-500/50
                          disabled:opacity-40 disabled:cursor-not-allowed
-                         transition-all duration-200 mb-3 text-sm font-medium"
+                         transition-all duration-200 mb-2 text-sm font-medium"
             >
               <ScanSearch className="w-4 h-4" />
               {isCapturing ? 'Capturing...' : 'Analyze Screen'}
             </button>
+
+            {/* Record Meeting — system audio capture */}
+            <MeetingRecorder
+              onTranscriptReady={submitMeetingTranscript}
+              disabled={isStreaming}
+            />
 
             <p className="text-white/30 text-xs leading-relaxed">
               Click above to analyze your screen, or type a question below.
@@ -977,6 +1047,11 @@ export default function App() {
               <ScanSearch className="w-3 h-3" />
               Analyze Screen
             </button>
+            <MeetingRecorder
+              onTranscriptReady={submitMeetingTranscript}
+              disabled={isStreaming}
+              compact
+            />
           </div>
         )}
 

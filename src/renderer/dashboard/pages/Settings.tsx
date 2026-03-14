@@ -26,6 +26,7 @@ interface SettingsState {
   whisperApiUrl: string
   whisperModel: string
   autoHideDelay: number
+  smartCrop: boolean
 }
 
 const DEFAULT_STATE: SettingsState = {
@@ -47,7 +48,8 @@ const DEFAULT_STATE: SettingsState = {
   whisperApiKey: '',
   whisperApiUrl: '',
   whisperModel: '',
-  autoHideDelay: 0
+  autoHideDelay: 0,
+  smartCrop: false
 }
 
 export default function Settings() {
@@ -86,7 +88,8 @@ export default function Settings() {
         whisperApiKey: all.whisperApiKey || '',
         whisperApiUrl: all.whisperApiUrl || '',
         whisperModel: all.whisperModel || '',
-        autoHideDelay: typeof all.autoHideDelay === 'number' ? all.autoHideDelay : 0
+        autoHideDelay: typeof all.autoHideDelay === 'number' ? all.autoHideDelay : 0,
+        smartCrop: all.smartCrop || false
       })
     } catch (err) {
       console.error('Failed to load settings:', err)
@@ -112,6 +115,7 @@ export default function Settings() {
       await api.setSetting('whisperApiUrl', settings.whisperApiUrl)
       await api.setSetting('whisperModel', settings.whisperModel)
       await api.setSetting('autoHideDelay', settings.autoHideDelay)
+      await api.setSetting('smartCrop', settings.smartCrop)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
@@ -497,6 +501,26 @@ export default function Settings() {
               <div
                 className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
                   settings.autoCapture ? 'translate-x-[22px]' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Smart Crop — active window only */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm text-white/50">Smart Crop</label>
+              <p className="text-xs text-white/20 mt-0.5">Capture only the active window instead of the full screen</p>
+            </div>
+            <button
+              onClick={() => updateSetting('smartCrop', !settings.smartCrop)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                settings.smartCrop ? 'bg-violet-500' : 'bg-white/10'
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  settings.smartCrop ? 'translate-x-[22px]' : 'translate-x-0.5'
                 }`}
               />
             </button>
