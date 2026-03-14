@@ -151,6 +151,6 @@ CLAUDE.md
 .claude/skills/gstack/browse/dist/
 .claude/skills/gstack/bun.lock
 
-.claude/
+.claude/skills/
 CLAUDE.md
 .agent/ 
