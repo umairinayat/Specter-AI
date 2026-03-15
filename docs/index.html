@@ -14,26 +14,32 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- Particle canvas background -->
+  <canvas id="particleCanvas"></canvas>
 
   <!-- ============ NAVBAR ============ -->
   <nav class="navbar" id="navbar">
     <div class="container nav-container">
       <a href="#" class="nav-logo">
-        <div class="logo-icon">S</div>
+        <div class="logo-icon">
+          <span class="logo-ghost">S</span>
+          <div class="logo-pulse"></div>
+        </div>
         <span>Specter AI</span>
       </a>
       <div class="nav-links" id="navLinks">
         <a href="#features">Features</a>
+        <a href="#proof">The Proof</a>
         <a href="#how-it-works">How It Works</a>
         <a href="#download">Download</a>
-        <a href="#comparison">Compare</a>
         <a href="https://github.com/umairinayat/Specter-AI" target="_blank" rel="noopener" class="nav-github">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          GitHub
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          <span>Star on GitHub</span>
         </a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
@@ -43,145 +49,223 @@
   </nav>
 
   <!-- ============ HERO ============ -->
-  <section class="hero">
-    <div class="hero-glow"></div>
-    <div class="hero-grid"></div>
+  <section class="hero" id="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
     <div class="container hero-container">
-      <div class="hero-content">
-        <div class="hero-badge">Open Source &bull; MIT License &bull; Free Forever</div>
-        <h1 class="hero-title">
-          The AI copilot<br />
-          <span class="gradient-text">no one else can see.</span>
-        </h1>
-        <p class="hero-subtitle">
-          Real-time AI assistance during meetings, interviews, and work sessions.
-          An invisible overlay that reads your screen, transcribes audio, and streams
-          AI responses &mdash; completely hidden from screen share.
-        </p>
-        <div class="hero-actions">
-          <a href="#download" class="btn btn-primary btn-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download for Free
-          </a>
-          <a href="https://github.com/umairinayat/Specter-AI" target="_blank" rel="noopener" class="btn btn-outline btn-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            View Source
-          </a>
-        </div>
-        <div class="hero-stats">
-          <div class="stat">
-            <span class="stat-value">500+</span>
-            <span class="stat-label">AI Models</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-value">3</span>
-            <span class="stat-label">Platforms</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-value">$0</span>
-            <span class="stat-label">Price Tag</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-value">MIT</span>
-            <span class="stat-label">Licensed</span>
-          </div>
+      <div class="hero-badge-wrap">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          Open Source &bull; MIT License &bull; Free Forever
         </div>
       </div>
-      <div class="hero-visual">
-        <div class="overlay-mockup">
-          <div class="mockup-header">
-            <div class="mockup-dots">
-              <span></span><span></span><span></span>
-            </div>
-            <div class="mockup-title">Specter AI</div>
-            <div class="mockup-badge">Invisible to screen share</div>
-          </div>
-          <div class="mockup-body">
-            <div class="mockup-message mockup-user">
-              <div class="mockup-role">You</div>
-              <div class="mockup-text">What should I say about our Q3 growth strategy?</div>
-            </div>
-            <div class="mockup-message mockup-ai">
-              <div class="mockup-role">AI</div>
-              <div class="mockup-text">
-                <span class="typing-line">Focus on three key wins:</span>
-                <span class="typing-line delay-1">&bull; Revenue grew 34% YoY driven by enterprise expansion</span>
-                <span class="typing-line delay-2">&bull; Customer retention improved to 94% with the new onboarding flow</span>
-                <span class="typing-line delay-3">&bull; Pipeline is 2.1x target heading into Q4</span>
-                <span class="typing-cursor">|</span>
-              </div>
-            </div>
-            <div class="mockup-transcript">
-              <div class="transcript-dot"></div>
-              <span>CFO: "...let's discuss the growth numbers for this quarter..."</span>
-            </div>
-          </div>
+      <h1 class="hero-title">
+        Your invisible<br />
+        <span class="gradient-text">AI advantage.</span>
+      </h1>
+      <p class="hero-subtitle">
+        Real-time AI assistance that reads your screen, transcribes meetings,
+        and streams answers in an overlay <em>completely invisible</em> to screen share.
+      </p>
+      <div class="hero-actions">
+        <a href="#download" class="btn btn-primary btn-glow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Free
+        </a>
+        <a href="https://github.com/umairinayat/Specter-AI" target="_blank" rel="noopener" class="btn btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View Source
+        </a>
+      </div>
+
+      <!-- Floating stats pills -->
+      <div class="hero-pills">
+        <div class="pill">
+          <span class="pill-value">500+</span>
+          <span class="pill-label">AI Models</span>
+        </div>
+        <div class="pill">
+          <span class="pill-value">$0</span>
+          <span class="pill-label">Forever</span>
+        </div>
+        <div class="pill">
+          <span class="pill-value">3</span>
+          <span class="pill-label">Platforms</span>
+        </div>
+        <div class="pill">
+          <span class="pill-value">MIT</span>
+          <span class="pill-label">Licensed</span>
         </div>
       </div>
     </div>
-    <div class="hero-scroll">
-      <span>Scroll to explore</span>
-      <div class="scroll-arrow"></div>
+    <div class="hero-fade"></div>
+  </section>
+
+  <!-- ============ SPLIT SCREEN PROOF ============ -->
+  <section class="proof" id="proof">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">See the Difference</span>
+        <h2 class="section-title">What you see vs.<br /><span class="gradient-text">what they see.</span></h2>
+        <p class="section-sub">The overlay is right there on your screen &mdash; but completely invisible on the other end.</p>
+      </div>
+      <div class="split-demo">
+        <div class="split-panel split-yours">
+          <div class="split-label">
+            <span class="split-dot split-dot-green"></span>
+            Your Screen
+          </div>
+          <div class="split-screen">
+            <div class="fake-meeting">
+              <div class="fake-bar">
+                <div class="fake-dots"><span></span><span></span><span></span></div>
+                <span class="fake-title">Team Standup &mdash; Google Meet</span>
+              </div>
+              <div class="fake-content">
+                <div class="fake-video">
+                  <div class="fake-avatar">JD</div>
+                  <span>John (Speaking)</span>
+                </div>
+                <div class="fake-chat">
+                  <p>"...so what's the status on the API migration?"</p>
+                </div>
+              </div>
+            </div>
+            <!-- The overlay visible on YOUR screen -->
+            <div class="overlay-ghost">
+              <div class="ghost-header">
+                <div class="ghost-dot"></div>
+                <span>Specter AI</span>
+                <span class="ghost-badge">Invisible</span>
+              </div>
+              <div class="ghost-body">
+                <div class="ghost-line">API migration is 80% complete.</div>
+                <div class="ghost-line">Remaining: auth endpoints + rate limiting.</div>
+                <div class="ghost-line">ETA: end of this sprint (Friday).</div>
+                <div class="ghost-cursor"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="split-divider">
+          <div class="split-vs">VS</div>
+        </div>
+        <div class="split-panel split-theirs">
+          <div class="split-label">
+            <span class="split-dot split-dot-red"></span>
+            Their Screen (via Screen Share)
+          </div>
+          <div class="split-screen">
+            <div class="fake-meeting">
+              <div class="fake-bar">
+                <div class="fake-dots"><span></span><span></span><span></span></div>
+                <span class="fake-title">Team Standup &mdash; Google Meet</span>
+              </div>
+              <div class="fake-content">
+                <div class="fake-video">
+                  <div class="fake-avatar">JD</div>
+                  <span>John (Speaking)</span>
+                </div>
+                <div class="fake-chat">
+                  <p>"...so what's the status on the API migration?"</p>
+                </div>
+              </div>
+            </div>
+            <!-- NO overlay on THEIR screen -->
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- ============ FEATURES ============ -->
+  <!-- ============ BENTO FEATURES ============ -->
   <section class="features" id="features">
     <div class="container">
       <div class="section-header">
         <span class="section-tag">Capabilities</span>
-        <h2 class="section-title">Everything you need,<br /><span class="gradient-text">nothing they can detect.</span></h2>
-        <p class="section-subtitle">Six core features designed for real-time assistance without detection.</p>
+        <h2 class="section-title">Everything you need.<br /><span class="gradient-text">Nothing they detect.</span></h2>
       </div>
-      <div class="features-grid">
-        <div class="feature-card feature-highlight">
-          <div class="feature-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2"/></svg>
+      <div class="bento">
+        <!-- Large card: Invisible Overlay -->
+        <div class="bento-card bento-wide bento-accent">
+          <div class="bento-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="1" y1="1" x2="23" y2="23" stroke-width="2"/></svg>
           </div>
           <h3>Invisible Overlay</h3>
-          <p>A transparent, always-on-top window that is completely invisible to Zoom, Google Meet, Teams, and all screen-sharing software. Uses native OS APIs for screen-capture exclusion on macOS and Windows.</p>
-          <div class="feature-tags">
+          <p>Transparent, always-on-top window that is completely invisible to Zoom, Meet, Teams, and all screen-sharing software. Uses native OS APIs &mdash; WDA_EXCLUDEFROMCAPTURE on Windows, type:panel on macOS.</p>
+          <div class="bento-tags">
             <span>macOS: type:panel</span>
-            <span>Windows: ContentProtection</span>
+            <span>Win: FFI WDA_EXCLUDEFROMCAPTURE</span>
           </div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+
+        <!-- Screen OCR -->
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
-          <h3>Screen Reading (OCR)</h3>
-          <p>Captures your screen on demand and extracts text using Tesseract.js running in a dedicated worker thread. The AI sees what you see.</p>
+          <h3>Screen Reading</h3>
+          <p>On-demand OCR via Tesseract.js in a worker thread. Smart crop captures only the active window.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+
+        <!-- Live Transcription -->
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </div>
-          <h3>Live Transcription</h3>
-          <p>Records meeting audio via Web Audio API and transcribes every 10 seconds using Whisper. Supports Groq (free), OpenAI, or any custom endpoint.</p>
+          <h3>Meeting Transcription</h3>
+          <p>Record meetings with one click. Audio transcribed via Groq Whisper (free) or OpenAI, then answered by your chosen model.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+
+        <!-- 500+ Models -->
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
           <h3>500+ AI Models</h3>
-          <p>Powered by OpenRouter with access to GPT-4, Claude, Gemini, Llama, DeepSeek, and 500+ more. Pick the model that fits your speed, quality, and budget needs.</p>
+          <p>GPT-4, Claude, Gemini, Llama, DeepSeek &mdash; pick the model that fits your speed, quality, and budget.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+
+        <!-- Playbooks -->
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           </div>
-          <h3>Playbooks</h3>
-          <p>Upload meeting prep, job descriptions, or notes as context documents. Active playbooks are automatically injected into every AI prompt for relevant, tailored responses.</p>
+          <h3>Playbooks &amp; PDFs</h3>
+          <p>Upload prep notes, job descriptions, or PDFs as context. Automatically injected into every prompt.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+
+        <!-- Privacy - wide card -->
+        <div class="bento-card bento-wide">
+          <div class="bento-icon bento-icon-green">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
-          <h3>Privacy First</h3>
-          <p>Everything runs locally. No telemetry, no analytics, no data collection. Only extracted text is sent to the AI API &mdash; and only when you trigger it. Raw audio and screenshots never leave your machine.</p>
+          <h3>Privacy First &mdash; Your Data Never Leaves</h3>
+          <p>Everything runs locally. No telemetry, no analytics, no data collection. Only extracted text goes to the AI &mdash; and only when you trigger it. Raw audio and screenshots never leave your machine.</p>
+          <div class="privacy-flow">
+            <div class="pf-node">
+              <div class="pf-icon">Screen</div>
+            </div>
+            <div class="pf-arrow">
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none"><path d="M0 6h16M16 6l-4-4M16 6l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="pf-node pf-local">
+              <div class="pf-icon">Local OCR</div>
+            </div>
+            <div class="pf-arrow">
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none"><path d="M0 6h16M16 6l-4-4M16 6l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="pf-node">
+              <div class="pf-icon">Text Only</div>
+            </div>
+            <div class="pf-arrow">
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none"><path d="M0 6h16M16 6l-4-4M16 6l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="pf-node">
+              <div class="pf-icon">Overlay</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -194,52 +278,43 @@
         <span class="section-tag">Workflow</span>
         <h2 class="section-title">Three steps to<br /><span class="gradient-text">invisible AI assistance.</span></h2>
       </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">01</div>
-          <div class="step-content">
+      <div class="timeline">
+        <div class="timeline-line"></div>
+        <div class="tl-step">
+          <div class="tl-marker">
+            <span>01</span>
+          </div>
+          <div class="tl-content">
             <h3>Capture Context</h3>
-            <p>Press a hotkey and Specter captures your screen via OCR and transcribes meeting audio in real time. It sees what you see and hears what you hear.</p>
-            <div class="step-detail">
-              <code>Ctrl+Shift+Enter</code> &mdash; Screenshot + OCR<br />
-              <code>Ctrl+Shift+Space</code> &mdash; Toggle audio transcription
-            </div>
-          </div>
-          <div class="step-visual">
-            <div class="step-icon-box">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M12 17v4M8 21h8"/><circle cx="12" cy="10" r="2" fill="currentColor" opacity="0.3"/></svg>
+            <p>Press a hotkey &mdash; Specter captures your screen via OCR and records meeting audio. It sees what you see and hears what you hear.</p>
+            <div class="tl-keys">
+              <kbd>Ctrl+Shift+Enter</kbd> Screenshot + OCR
+              <br />
+              <kbd>Ctrl+Shift+Space</kbd> Toggle audio
             </div>
           </div>
         </div>
-        <div class="step-connector"></div>
-        <div class="step">
-          <div class="step-number">02</div>
-          <div class="step-content">
+        <div class="tl-step">
+          <div class="tl-marker">
+            <span>02</span>
+          </div>
+          <div class="tl-content">
             <h3>AI Processes</h3>
-            <p>Screen text, audio transcript, your question, and active playbook context are assembled into a prompt and streamed to your chosen AI model on OpenRouter.</p>
-            <div class="step-detail">
-              <code>Ctrl+Enter</code> &mdash; Ask AI with full context
-            </div>
-          </div>
-          <div class="step-visual">
-            <div class="step-icon-box">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.57-3.25 3.93"/><path d="M8.24 9.93A4 4 0 0 1 12 2"/><path d="M12 22a4 4 0 0 0 4-4c0-1.95-1.4-3.57-3.25-3.93"/><path d="M8.24 14.07A4 4 0 0 0 12 22"/><circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.3"/></svg>
+            <p>Screen text, transcript, your question, and playbook context are assembled and streamed to your chosen AI model on OpenRouter.</p>
+            <div class="tl-keys">
+              <kbd>Ctrl+Enter</kbd> Ask AI with full context
             </div>
           </div>
         </div>
-        <div class="step-connector"></div>
-        <div class="step">
-          <div class="step-number">03</div>
-          <div class="step-content">
-            <h3>Invisible Response</h3>
-            <p>The AI response streams into a translucent overlay that only you can see. It stays on top of all windows but is completely invisible to screen share software.</p>
-            <div class="step-detail">
-              <code>Ctrl+\</code> &mdash; Toggle overlay visibility
-            </div>
+        <div class="tl-step">
+          <div class="tl-marker">
+            <span>03</span>
           </div>
-          <div class="step-visual">
-            <div class="step-icon-box">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3" opacity="0.3" fill="currentColor"/><path d="M9 12h6M9 8h6M9 16h4"/></svg>
+          <div class="tl-content">
+            <h3>Invisible Response</h3>
+            <p>The response streams into a translucent overlay only you can see. Always on top, never in the screen share.</p>
+            <div class="tl-keys">
+              <kbd>Ctrl+\</kbd> Toggle overlay
             </div>
           </div>
         </div>
@@ -247,44 +322,59 @@
     </div>
   </section>
 
-  <!-- ============ DATA FLOW ============ -->
-  <section class="dataflow">
+  <!-- ============ COMPARISON ============ -->
+  <section class="comparison" id="comparison">
     <div class="container">
-      <div class="dataflow-card">
-        <h3>How your data flows</h3>
-        <div class="flow-diagram">
-          <div class="flow-node">
-            <div class="flow-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            </div>
-            <span>Your Screen</span>
-          </div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node">
-            <div class="flow-icon local">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <span>Local OCR</span>
-            <small>Tesseract.js</small>
-          </div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node">
-            <div class="flow-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            </div>
-            <span>Text Only</span>
-            <small>to OpenRouter</small>
-          </div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node">
-            <div class="flow-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3" opacity="0.3" fill="currentColor"/><path d="M9 12h6M9 8h6M9 16h4"/></svg>
-            </div>
-            <span>Overlay</span>
-            <small>Only you see it</small>
-          </div>
+      <div class="section-header">
+        <span class="section-tag">Why Switch</span>
+        <h2 class="section-title">Specter AI vs.<br /><span class="gradient-text">the $49/month alternative.</span></h2>
+      </div>
+      <div class="compare-grid">
+        <div class="compare-row compare-header">
+          <div>Feature</div>
+          <div>Cluely</div>
+          <div class="compare-hl">Specter AI</div>
         </div>
-        <p class="flow-note">Raw screenshots and audio recordings <strong>never</strong> leave your machine. Only extracted text is sent to the AI.</p>
+        <div class="compare-row">
+          <div>Price</div>
+          <div class="compare-bad">$20&ndash;49/mo</div>
+          <div class="compare-hl compare-good">Free forever</div>
+        </div>
+        <div class="compare-row">
+          <div>Source Code</div>
+          <div class="compare-bad">Closed</div>
+          <div class="compare-hl compare-good">Open source (MIT)</div>
+        </div>
+        <div class="compare-row">
+          <div>AI Backend</div>
+          <div class="compare-bad">Proprietary</div>
+          <div class="compare-hl compare-good">OpenRouter (500+ models)</div>
+        </div>
+        <div class="compare-row">
+          <div>Data Privacy</div>
+          <div class="compare-bad">Cloud-dependent</div>
+          <div class="compare-hl compare-good">Local-first</div>
+        </div>
+        <div class="compare-row">
+          <div>Model Choice</div>
+          <div class="compare-bad">Fixed (GPT-4)</div>
+          <div class="compare-hl compare-good">Any model you want</div>
+        </div>
+        <div class="compare-row">
+          <div>Customization</div>
+          <div class="compare-bad">Limited</div>
+          <div class="compare-hl compare-good">Full prompt control</div>
+        </div>
+        <div class="compare-row">
+          <div>Playbooks</div>
+          <div class="compare-bad">Paid feature</div>
+          <div class="compare-hl compare-good">Built-in, free</div>
+        </div>
+        <div class="compare-row">
+          <div>Self-hosting</div>
+          <div class="compare-bad">No</div>
+          <div class="compare-hl compare-good">Yes</div>
+        </div>
       </div>
     </div>
   </section>
@@ -294,36 +384,33 @@
     <div class="container">
       <div class="section-header">
         <span class="section-tag">Get Started</span>
-        <h2 class="section-title">Download Specter AI<br /><span class="gradient-text">for your platform.</span></h2>
-        <p class="section-subtitle">Free and open source. Bring your own OpenRouter API key.</p>
+        <h2 class="section-title">Download for<br /><span class="gradient-text">your platform.</span></h2>
+        <p class="section-sub">Free and open source. Bring your own OpenRouter API key.</p>
       </div>
-      <div class="download-grid">
-        <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="download-card">
-          <div class="download-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+      <div class="dl-grid">
+        <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="dl-card">
+          <div class="dl-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
           </div>
           <h3>Windows</h3>
-          <p>Portable .exe</p>
-          <span class="download-badge">x64</span>
+          <span class="dl-detail">Portable .exe &bull; x64</span>
         </a>
-        <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="download-card">
-          <div class="download-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="dl-card">
+          <div class="dl-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
           </div>
           <h3>macOS</h3>
-          <p>.zip (Intel & Apple Silicon)</p>
-          <span class="download-badge">Universal</span>
+          <span class="dl-detail">.zip &bull; Intel + Apple Silicon</span>
         </a>
-        <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="download-card">
-          <div class="download-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.39.033.77-.396 1.164-.664.585-.46 1.292-.785 1.62-1.206l.068-.135c.182-.482.186-.898.095-1.362-.05-.213-.105-.603-.096-.92.015-.562.046-.98.172-1.395.125-.407.29-.6.455-.793.163-.194.378-.363.466-.703.025-.085.037-.166.037-.252a.566.566 0 00-.109-.336 1.04 1.04 0 00-.157-.148c-.14-.114-.3-.216-.407-.338a2.356 2.356 0 01-.121-.148l-.04-.06c-.14-.237-.199-.456-.247-.705a5.186 5.186 0 01-.078-.63c.001-.148.02-.373-.02-.6-.051-.272-.099-.506-.125-.607-.091-.233-.196-.444-.305-.614-.203-.289-.411-.442-.58-.73-.138-.283-.233-.666-.137-1.133.099-.504.32-.913.536-1.288.209-.368.39-.67.41-1.004a1.28 1.28 0 00-.075-.522c-.058-.156-.14-.258-.184-.352l-.032-.06c-.084-.189-.09-.306-.038-.478.09-.244.276-.427.37-.525.093-.1.165-.156.196-.271a.576.576 0 00-.012-.319c-.036-.118-.09-.199-.157-.33-.032-.066-.063-.09-.09-.134-.022-.04-.041-.118-.016-.18a.35.35 0 01.102-.133c.065-.052.117-.066.153-.1a.82.82 0 00.166-.254c.054-.113.091-.222.063-.377-.058-.268-.29-.426-.478-.497a2.168 2.168 0 00-.528-.094c-.138-.004-.254.01-.362.044l-.006.003a.88.88 0 00-.09.032c-.15.06-.314.18-.483.352-.08.084-.153.18-.232.28-.256.346-.342.345-.614.484a.973.973 0 01-.383.074c-.208-.001-.391-.04-.603-.093a5.498 5.498 0 00-.405-.085c-.277-.043-.554-.038-.812.033a1.65 1.65 0 00-.592.325l-.005.003c-.07.059-.13.119-.188.183a2.707 2.707 0 00-.317.476c-.132.255-.235.548-.303.87-.042.197-.071.4-.091.6l-.002.003c-.036.38-.014.667.065.952.082.29.209.529.31.733.105.21.17.39.158.526-.012.11-.08.218-.16.353-.073.12-.152.25-.224.42a1.743 1.743 0 00-.14.727c-.005.139.012.263.039.384a2.13 2.13 0 00.062.237l.002.004v.001c.033.104.063.174.052.257-.01.08-.057.15-.128.244-.136.178-.306.283-.396.445a1.05 1.05 0 00-.108.595c.024.175.09.28.16.4.072.12.147.238.16.371.015.118-.035.258-.122.41a2.997 2.997 0 01-.37.48c-.173.175-.39.307-.51.513a.936.936 0 00-.095.546c.018.073.03.127.037.178l-.003.003z"/></svg>
+        <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="dl-card">
+          <div class="dl-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2C6.5 2 2 6.5 2 12"/><path d="M2 12c3 0 5.5 2.5 5.5 5.5"/><path d="M12 22c0-3 2.5-5.5 5.5-5.5"/><path d="M22 12c-3 0-5.5-2.5-5.5-5.5"/></svg>
           </div>
           <h3>Linux</h3>
-          <p>.AppImage &amp; .deb</p>
-          <span class="download-badge">x64</span>
+          <span class="dl-detail">.AppImage &amp; .deb &bull; x64</span>
         </a>
       </div>
-      <div class="download-source">
+      <div class="dl-source">
         <p>Or build from source:</p>
         <div class="code-block">
           <code>git clone https://github.com/umairinayat/Specter-AI.git && cd Specter-AI && npm install && npm run dev</code>
@@ -335,85 +422,25 @@
     </div>
   </section>
 
-  <!-- ============ COMPARISON ============ -->
-  <section class="comparison" id="comparison">
+  <!-- ============ TECH STACK (minimal) ============ -->
+  <section class="stack">
     <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Why Switch</span>
-        <h2 class="section-title">Specter AI vs<br /><span class="gradient-text">paid alternatives.</span></h2>
-      </div>
-      <div class="comparison-table-wrap">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th>Feature</th>
-              <th>Cluely</th>
-              <th class="highlight-col">Specter AI</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Price</td>
-              <td>$20&ndash;49/month</td>
-              <td class="highlight-col"><strong>Free forever</strong></td>
-            </tr>
-            <tr>
-              <td>Source Code</td>
-              <td>Closed</td>
-              <td class="highlight-col"><strong>Open source (MIT)</strong></td>
-            </tr>
-            <tr>
-              <td>AI Backend</td>
-              <td>Proprietary</td>
-              <td class="highlight-col"><strong>OpenRouter (500+ models)</strong></td>
-            </tr>
-            <tr>
-              <td>Data Privacy</td>
-              <td>Cloud-dependent</td>
-              <td class="highlight-col"><strong>Local-first</strong></td>
-            </tr>
-            <tr>
-              <td>Model Choice</td>
-              <td>Fixed (GPT-4)</td>
-              <td class="highlight-col"><strong>Any model you want</strong></td>
-            </tr>
-            <tr>
-              <td>Customization</td>
-              <td>Limited</td>
-              <td class="highlight-col"><strong>Full system prompt control</strong></td>
-            </tr>
-            <tr>
-              <td>Playbooks</td>
-              <td>Paid feature</td>
-              <td class="highlight-col"><strong>Built-in, free</strong></td>
-            </tr>
-            <tr>
-              <td>Self-hosting</td>
-              <td>No</td>
-              <td class="highlight-col"><strong>Yes</strong></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ TECH STACK ============ -->
-  <section class="tech-stack">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Built With</span>
-        <h2 class="section-title">Modern, battle-tested<br /><span class="gradient-text">open-source stack.</span></h2>
-      </div>
-      <div class="tech-grid">
-        <div class="tech-item"><span class="tech-name">Electron 33</span><span class="tech-desc">Desktop shell</span></div>
-        <div class="tech-item"><span class="tech-name">React 18</span><span class="tech-desc">UI framework</span></div>
-        <div class="tech-item"><span class="tech-name">TypeScript 5</span><span class="tech-desc">Type safety</span></div>
-        <div class="tech-item"><span class="tech-name">Tailwind CSS</span><span class="tech-desc">Styling</span></div>
-        <div class="tech-item"><span class="tech-name">Tesseract.js</span><span class="tech-desc">Screen OCR</span></div>
-        <div class="tech-item"><span class="tech-name">Whisper</span><span class="tech-desc">Audio transcription</span></div>
-        <div class="tech-item"><span class="tech-name">OpenRouter</span><span class="tech-desc">AI backend</span></div>
-        <div class="tech-item"><span class="tech-name">Vite</span><span class="tech-desc">Build tool</span></div>
+      <div class="stack-strip">
+        <div class="stack-item">Electron 34</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">React 18</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">TypeScript</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">Tailwind CSS</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">Tesseract.js</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">Whisper</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">OpenRouter</div>
+        <div class="stack-sep"></div>
+        <div class="stack-item">Vite</div>
       </div>
     </div>
   </section>
@@ -422,14 +449,15 @@
   <section class="cta">
     <div class="container">
       <div class="cta-card">
-        <h2>Ready to get your invisible edge?</h2>
+        <div class="cta-glow"></div>
+        <h2>Ready for your <span class="gradient-text">invisible edge?</span></h2>
         <p>Download Specter AI for free. No account, no subscription, no data collection.</p>
         <div class="cta-actions">
-          <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+          <a href="https://github.com/umairinayat/Specter-AI/releases" target="_blank" rel="noopener" class="btn btn-primary btn-glow">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download Latest Release
           </a>
-          <a href="https://github.com/umairinayat/Specter-AI" target="_blank" rel="noopener" class="btn btn-outline btn-lg">Star on GitHub</a>
+          <a href="https://github.com/umairinayat/Specter-AI" target="_blank" rel="noopener" class="btn btn-ghost">Star on GitHub</a>
         </div>
       </div>
     </div>
@@ -437,13 +465,10 @@
 
   <!-- ============ FOOTER ============ -->
   <footer class="footer">
-    <div class="container footer-container">
-      <div class="footer-left">
-        <div class="footer-logo">
-          <div class="logo-icon">S</div>
-          <span>Specter AI</span>
-        </div>
-        <p>Open-source AI copilot. MIT Licensed.</p>
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <div class="logo-icon"><span class="logo-ghost">S</span></div>
+        <span>Specter AI</span>
       </div>
       <div class="footer-links">
         <a href="https://github.com/umairinayat/Specter-AI" target="_blank" rel="noopener">GitHub</a>
@@ -452,9 +477,7 @@
         <a href="https://github.com/umairinayat/Specter-AI/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a>
         <a href="https://openrouter.ai" target="_blank" rel="noopener">OpenRouter</a>
       </div>
-      <div class="footer-bottom">
-        <p>&copy; 2026 Specter AI &bull; Built with a healthy disregard for subscription fees.</p>
-      </div>
+      <p class="footer-copy">&copy; 2026 Specter AI &bull; Built with a healthy disregard for subscription fees.</p>
     </div>
   </footer>
 
