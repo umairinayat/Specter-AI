@@ -1,42 +1,43 @@
 // Overlay window — transparent, always-on-top, invisible to screen share
 //
-// Windows capture protection: transparent: true creates a layered window
-// (WS_EX_LAYERED) which causes SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)
-// to be silently ignored. We use Electron's setContentProtection(true) instead,
-// which works reliably with transparent windows.
+// Screen-capture protection:
+//   macOS:   type:'panel' + screen-saver level → natively excluded from capture.
+//   Windows: Uses koffi FFI to call SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)
+//            which makes the window completely invisible to all capture APIs.
+//            Electron's setContentProtection(true) is NOT used because it causes
+//            a BLACK RECTANGLE on transparent/layered windows.
+//   Linux:   No reliable screen-capture exclusion API exists.
 
-import { BrowserWindow, desktopCapturer, screen, shell } from 'electron'
+import { BrowserWindow, screen, shell } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getSetting, setSetting } from '../services/store'
 import { OVERLAY_DEFAULTS } from '../shared/constants'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
+import { applyExcludeFromCapture, verifyDisplayAffinity } from './capture-protection'
 
 let overlayWindow: BrowserWindow | null = null
 
 /**
- * Apply screen-capture protection.
- * On Windows: setContentProtection(true) — works with transparent windows.
- * On macOS: type:'panel' + screen-saver level handles this at window creation.
+ * Apply screen-capture protection via native FFI (Windows only).
+ * Uses WDA_EXCLUDEFROMCAPTURE for true invisibility — no black rectangle.
  */
 function applyCaptureProtection(win: BrowserWindow): void {
   if (win.isDestroyed()) return
+  if (process.platform !== 'win32') return
 
-  if (process.platform === 'win32') {
-    try {
-      win.setContentProtection(true)
-    } catch (err) {
-      console.warn('[Specter] setContentProtection failed:', err)
-    }
+  const applied = applyExcludeFromCapture(win)
+  if (applied) {
+    // Verify the flag stuck
+    verifyDisplayAffinity(win)
   }
 }
 
 function showProtectedOverlay(win: BrowserWindow, focus = false): void {
   if (win.isDestroyed()) return
 
-  // Electron can drop Windows content protection after hide/show cycles,
-  // so re-assert it whenever the overlay becomes visible.
-  applyCaptureProtection(win)
+  // Re-assert capture protection after hide/show cycles
+  // (Windows can drop display affinity flags when windows are hidden)
   win.show()
   applyCaptureProtection(win)
 
@@ -137,27 +138,6 @@ export function createOverlayWindow(): BrowserWindow {
   } else {
     overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay/index.html'))
   }
-
-  // --- System audio capture via desktopCapturer ---
-  // Auto-resolve getDisplayMedia requests with loopback audio so the renderer
-  // can capture system audio (interviewer's voice) without showing a picker dialog.
-  overlayWindow.webContents.session.setDisplayMediaRequestHandler(
-    async (_request, callback) => {
-      try {
-        const sources = await desktopCapturer.getSources({ types: ['screen'] })
-        if (sources.length > 0) {
-          callback({ video: sources[0], audio: 'loopback' })
-        } else {
-          // No screen sources found — deny the request
-          callback({})
-        }
-      } catch (err) {
-        console.error('[Specter] setDisplayMediaRequestHandler error:', err)
-        callback({})
-      }
-    },
-    { useSystemPicker: false }
-  )
 
   // --- Security: block all navigation and new windows ---
   overlayWindow.webContents.on('will-navigate', (event, url) => {
