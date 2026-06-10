@@ -109,5 +109,9 @@ export const DEFAULT_SETTINGS = {
 }
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+export const OPENROUTER_KEYS_URL = 'https://openrouter.ai/keys'
 export const OPENROUTER_REFERER = 'https://github.com/umairinayat/Specter-AI'
 export const OPENROUTER_TITLE = 'Specter AI'
+
+export const CHATGPT_CODEX_URL = 'https://chatgpt.com/codex'
+export const CHATGPT_PRICING_URL = 'https://chatgpt.com/pricing'

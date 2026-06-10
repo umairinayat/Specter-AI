@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Key, Eye, EyeOff, Keyboard, Monitor, Sliders, MessageSquare,
-  Save, RotateCcw, CheckCircle, AlertCircle, Loader2, Mic
+  Save, RotateCcw, CheckCircle, AlertCircle, Loader2, Mic, Code2, ExternalLink
 } from 'lucide-react'
+import { CHATGPT_CODEX_URL, CHATGPT_PRICING_URL, OPENROUTER_KEYS_URL } from '../../../shared/constants'
 
 interface SettingsState {
   openrouterApiKey: string
@@ -145,6 +146,10 @@ export default function Settings() {
     setSettings(DEFAULT_STATE)
   }, [])
 
+  const openExternal = useCallback((url: string) => {
+    window.specterAPI.openExternal(url)
+  }, [])
+
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
@@ -277,8 +282,49 @@ export default function Settings() {
           )}
           <p className="text-white/20 text-xs">
             Get your API key from{' '}
-            <span className="text-violet-400/60">openrouter.ai/keys</span>
+            <button
+              type="button"
+              onClick={() => openExternal(OPENROUTER_KEYS_URL)}
+              className="inline-flex items-center gap-1 text-violet-400/60 hover:text-violet-300 transition-colors"
+            >
+              openrouter.ai/keys
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </p>
+        </div>
+      </section>
+
+      {/* Codex */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 text-white/60">
+          <Code2 className="w-4 h-4 text-violet-400" />
+          <h3 className="text-sm font-medium">Codex Plan</h3>
+        </div>
+        <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4 space-y-3">
+          <div>
+            <p className="text-sm text-white/60">Use Codex with your ChatGPT account.</p>
+            <p className="text-xs text-white/25 mt-1">Opens ChatGPT in your browser for Codex sign-in and plan selection.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => openExternal(CHATGPT_CODEX_URL)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500/20 text-violet-300 text-sm
+                         hover:bg-violet-500/30 border border-violet-500/30 transition-colors"
+            >
+              <Code2 className="w-4 h-4" />
+              Sign in to Codex
+            </button>
+            <button
+              type="button"
+              onClick={() => openExternal(CHATGPT_PRICING_URL)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10
+                         text-white/50 text-sm hover:bg-white/10 hover:text-white/70 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Codex plan
+            </button>
+          </div>
         </div>
       </section>
 
