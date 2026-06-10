@@ -1,8 +1,12 @@
 // Shared type definitions for Specter AI
 
 export interface UserSettings {
+  aiProvider: 'openrouter' | 'openai' | 'codex'
   openrouterApiKey: string
   selectedModel: string
+  openaiApiKey: string
+  openaiModel: string
+  codexModel: string
   overlayOpacity: number
   overlayPosition: { x: number; y: number }
   overlaySize: { width: number; height: number }

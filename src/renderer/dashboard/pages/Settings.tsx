@@ -4,10 +4,14 @@ import {
   Key, Eye, EyeOff, Keyboard, Monitor, Sliders, MessageSquare,
   Save, RotateCcw, CheckCircle, AlertCircle, Loader2, Mic, Code2, ExternalLink
 } from 'lucide-react'
-import { CHATGPT_CODEX_URL, CHATGPT_PRICING_URL, OPENROUTER_KEYS_URL } from '../../../shared/constants'
+import { OPENAI_API_KEYS_URL, OPENAI_API_PRICING_URL, OPENROUTER_KEYS_URL } from '../../../shared/constants'
 
 interface SettingsState {
+  aiProvider: 'openrouter' | 'openai' | 'codex'
   openrouterApiKey: string
+  openaiApiKey: string
+  openaiModel: string
+  codexModel: string
   overlayOpacity: number
   autoCapture: boolean
   autoCaptureInterval: number
@@ -31,7 +35,11 @@ interface SettingsState {
 }
 
 const DEFAULT_STATE: SettingsState = {
+  aiProvider: 'openrouter',
   openrouterApiKey: '',
+  openaiApiKey: '',
+  openaiModel: 'gpt-5.5',
+  codexModel: 'gpt-5.4',
   overlayOpacity: 0.85,
   autoCapture: false,
   autoCaptureInterval: 30,
@@ -56,6 +64,7 @@ const DEFAULT_STATE: SettingsState = {
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_STATE)
   const [showApiKey, setShowApiKey] = useState(false)
+  const [showOpenAIKey, setShowOpenAIKey] = useState(false)
   const [showWhisperKey, setShowWhisperKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -76,7 +85,11 @@ export default function Settings() {
     try {
       const all = await window.specterAPI.getAllSettings() as unknown as SettingsState
       setSettings({
+        aiProvider: all.aiProvider || 'openrouter',
         openrouterApiKey: all.openrouterApiKey || '',
+        openaiApiKey: all.openaiApiKey || '',
+        openaiModel: all.openaiModel || 'gpt-5.5',
+        codexModel: all.codexModel || 'gpt-5.4',
         overlayOpacity: all.overlayOpacity || 0.85,
         autoCapture: all.autoCapture || false,
         autoCaptureInterval: all.autoCaptureInterval || 30,
@@ -102,7 +115,11 @@ export default function Settings() {
     setError(null)
     try {
       const api = window.specterAPI
+      await api.setSetting('aiProvider', settings.aiProvider)
       await api.setSetting('openrouterApiKey', settings.openrouterApiKey)
+      await api.setSetting('openaiApiKey', settings.openaiApiKey)
+      await api.setSetting('openaiModel', settings.openaiModel)
+      await api.setSetting('codexModel', settings.codexModel)
       await api.setSetting('overlayOpacity', settings.overlayOpacity)
       await api.setSetting('autoCapture', settings.autoCapture)
       await api.setSetting('autoCaptureInterval', settings.autoCaptureInterval)
@@ -229,104 +246,192 @@ export default function Settings() {
         <p className="text-sm text-white/40 mt-1">Configure your Specter AI experience</p>
       </div>
 
-      {/* API Key */}
+      {/* AI Backend */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white/60">
-          <Key className="w-4 h-4 text-violet-400" />
-          <h3 className="text-sm font-medium">OpenRouter API Key</h3>
+          <Code2 className="w-4 h-4 text-violet-400" />
+          <h3 className="text-sm font-medium">AI Backend</h3>
         </div>
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+        <div className="flex gap-2">
+          {([
+            { value: 'openrouter', label: 'OpenRouter', desc: 'API key' },
+            { value: 'openai', label: 'OpenAI API', desc: 'GPT credits' },
+            { value: 'codex', label: 'Codex Plan', desc: 'ChatGPT login' }
+          ] as const).map((provider) => (
+            <button
+              key={provider.value}
+              type="button"
+              onClick={() => updateSetting('aiProvider', provider.value)}
+              className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-colors text-left ${
+                settings.aiProvider === provider.value
+                  ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                  : 'bg-white/5 text-white/40 border border-white/10 hover:border-white/20'
+              }`}
+            >
+              <div className="font-medium">{provider.label}</div>
+              <div className="text-[10px] text-white/20 mt-0.5">{provider.desc}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {settings.aiProvider === 'openrouter' && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-white/60">
+            <Key className="w-4 h-4 text-violet-400" />
+            <h3 className="text-sm font-medium">OpenRouter API Key</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={settings.openrouterApiKey}
+                  onChange={(e) => {
+                    updateSetting('openrouterApiKey', e.target.value)
+                    setKeyValid(null)
+                  }}
+                  placeholder="sk-or-v1-..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                             text-white/90 placeholder-white/20 focus:border-violet-500/40
+                             focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                >
+                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <button
+                onClick={handleValidateKey}
+                disabled={validatingKey || !settings.openrouterApiKey.trim()}
+                className="px-4 py-2.5 rounded-xl bg-violet-500/20 text-violet-300 text-sm
+                           hover:bg-violet-500/30 disabled:opacity-30 disabled:cursor-not-allowed
+                           transition-colors flex items-center gap-2"
+              >
+                {validatingKey ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : keyValid === true ? (
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                ) : keyValid === false ? (
+                  <AlertCircle className="w-4 h-4 text-red-400" />
+                ) : null}
+                Validate
+              </button>
+            </div>
+            {keyValid === true && (
+              <p className="text-emerald-400 text-xs">API key is valid</p>
+            )}
+            {keyValid === false && (
+              <p className="text-red-400 text-xs">Invalid API key. Check your key and try again.</p>
+            )}
+            <p className="text-white/20 text-xs">
+              Get your API key from{' '}
+              <button
+                type="button"
+                onClick={() => openExternal(OPENROUTER_KEYS_URL)}
+                className="inline-flex items-center gap-1 text-violet-400/60 hover:text-violet-300 transition-colors"
+              >
+                openrouter.ai/keys
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </p>
+          </div>
+        </section>
+      )}
+
+      {settings.aiProvider === 'openai' && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-white/60">
+            <Key className="w-4 h-4 text-violet-400" />
+            <h3 className="text-sm font-medium">OpenAI API Credits</h3>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-white/50 block mb-2">OpenAI API Key</label>
+              <div className="relative">
+                <input
+                  type={showOpenAIKey ? 'text' : 'password'}
+                  value={settings.openaiApiKey}
+                  onChange={(e) => updateSetting('openaiApiKey', e.target.value)}
+                  placeholder="sk-..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                             text-white/90 placeholder-white/20 focus:border-violet-500/40
+                             focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={() => setShowOpenAIKey(!showOpenAIKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                >
+                  {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-white/20 text-xs mt-1.5">
+                Get your API key from{' '}
+                <button
+                  type="button"
+                  onClick={() => openExternal(OPENAI_API_KEYS_URL)}
+                  className="inline-flex items-center gap-1 text-violet-400/60 hover:text-violet-300 transition-colors"
+                >
+                  platform.openai.com/api-keys
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm text-white/50 block mb-2">GPT Model</label>
               <input
-                type={showApiKey ? 'text' : 'password'}
-                value={settings.openrouterApiKey}
-                onChange={(e) => {
-                  updateSetting('openrouterApiKey', e.target.value)
-                  setKeyValid(null)
-                }}
-                placeholder="sk-or-v1-..."
+                type="text"
+                value={settings.openaiModel}
+                onChange={(e) => updateSetting('openaiModel', e.target.value)}
+                placeholder="gpt-5.5"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
                            text-white/90 placeholder-white/20 focus:border-violet-500/40
                            focus:outline-none transition-colors"
               />
-              <button
-                onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
-              >
-                {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              <p className="text-white/20 text-xs mt-1.5">
+                Usage is billed to OpenAI API credits.{' '}
+                <button
+                  type="button"
+                  onClick={() => openExternal(OPENAI_API_PRICING_URL)}
+                  className="inline-flex items-center gap-1 text-violet-400/60 hover:text-violet-300 transition-colors"
+                >
+                  View pricing
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </p>
             </div>
-            <button
-              onClick={handleValidateKey}
-              disabled={validatingKey || !settings.openrouterApiKey.trim()}
-              className="px-4 py-2.5 rounded-xl bg-violet-500/20 text-violet-300 text-sm
-                         hover:bg-violet-500/30 disabled:opacity-30 disabled:cursor-not-allowed
-                         transition-colors flex items-center gap-2"
-            >
-              {validatingKey ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : keyValid === true ? (
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-              ) : keyValid === false ? (
-                <AlertCircle className="w-4 h-4 text-red-400" />
-              ) : null}
-              Validate
-            </button>
           </div>
-          {keyValid === true && (
-            <p className="text-emerald-400 text-xs">API key is valid</p>
-          )}
-          {keyValid === false && (
-            <p className="text-red-400 text-xs">Invalid API key. Check your key and try again.</p>
-          )}
-          <p className="text-white/20 text-xs">
-            Get your API key from{' '}
-            <button
-              type="button"
-              onClick={() => openExternal(OPENROUTER_KEYS_URL)}
-              className="inline-flex items-center gap-1 text-violet-400/60 hover:text-violet-300 transition-colors"
-            >
-              openrouter.ai/keys
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Codex */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white/60">
-          <Code2 className="w-4 h-4 text-violet-400" />
-          <h3 className="text-sm font-medium">Codex Plan</h3>
-        </div>
-        <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4 space-y-3">
-          <div>
-            <p className="text-sm text-white/60">Use Codex with your ChatGPT account.</p>
-            <p className="text-xs text-white/25 mt-1">Opens ChatGPT in your browser for Codex sign-in and plan selection.</p>
+      {settings.aiProvider === 'codex' && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-white/60">
+            <Code2 className="w-4 h-4 text-violet-400" />
+            <h3 className="text-sm font-medium">Codex Plan</h3>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => openExternal(CHATGPT_CODEX_URL)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500/20 text-violet-300 text-sm
-                         hover:bg-violet-500/30 border border-violet-500/30 transition-colors"
-            >
-              <Code2 className="w-4 h-4" />
-              Sign in to Codex
-            </button>
-            <button
-              type="button"
-              onClick={() => openExternal(CHATGPT_PRICING_URL)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10
-                         text-white/50 text-sm hover:bg-white/10 hover:text-white/70 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Codex plan
-            </button>
+          <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4 space-y-4">
+            <div>
+              <label className="text-sm text-white/50 block mb-2">Codex Model</label>
+              <input
+                type="text"
+                value={settings.codexModel}
+                onChange={(e) => updateSetting('codexModel', e.target.value)}
+                placeholder="gpt-5.4"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm
+                           text-white/90 placeholder-white/20 focus:border-violet-500/40
+                           focus:outline-none transition-colors"
+              />
+            </div>
+            <p className="text-white/25 text-xs leading-relaxed">
+              Uses the local Codex CLI session. Run <span className="font-mono text-white/45">codex login</span> once, then save this page.
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Audio Transcription (Whisper) */}
       <section className="space-y-4">

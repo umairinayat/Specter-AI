@@ -654,10 +654,22 @@ export default function App() {
     const unsubError = api.onStreamError((errMsg) => {
       // Parse and show user-friendly error messages
       let displayError = errMsg
-      if (errMsg.includes('401') || errMsg.includes('Unauthorized') || errMsg.includes('invalid_api_key')) {
-        displayError = 'Invalid API key. Check your OpenRouter API key in Settings.'
+      if (errMsg.includes('Codex CLI was not found')) {
+        displayError = 'Codex CLI was not found. Install Codex, run codex login, then select Codex Plan in Settings.'
+      } else if (errMsg.includes('requires a newer version of Codex')) {
+        displayError = 'Your Codex CLI is too old for that model. Upgrade Codex or choose an older Codex model in Settings.'
+      } else if (errMsg.toLowerCase().includes('codex') && errMsg.toLowerCase().includes('login')) {
+        displayError = 'Codex is not signed in. Run codex login in a terminal, then try again.'
+      } else if (errMsg.includes('No OpenAI API key configured')) {
+        displayError = 'No OpenAI API key configured. Add your OpenAI API key in Settings.'
+      } else if (errMsg.includes('Incorrect API key') || errMsg.includes('invalid_api_key')) {
+        displayError = 'Invalid API key. Check the selected AI backend and API key in Settings.'
+      } else if (errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('billing')) {
+        displayError = 'API credits or billing issue. Check credits for the selected AI backend.'
+      } else if (errMsg.includes('401') || errMsg.includes('Unauthorized') || errMsg.includes('invalid_api_key')) {
+        displayError = 'Invalid API key. Check the selected AI backend and API key in Settings.'
       } else if (errMsg.includes('402') || errMsg.includes('Payment') || errMsg.includes('insufficient')) {
-        displayError = 'Insufficient credits on OpenRouter. Add credits at openrouter.ai/credits'
+        displayError = 'Insufficient credits. Add credits for the selected AI backend.'
       } else if (errMsg.includes('404') || errMsg.includes('not found') || errMsg.includes('does not exist')) {
         displayError = 'Model not found. The selected model may be unavailable. Try a different model in Settings.'
       } else if (errMsg.includes('429') || errMsg.includes('rate limit') || errMsg.includes('Rate limit')) {

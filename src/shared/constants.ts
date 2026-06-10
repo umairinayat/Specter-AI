@@ -15,17 +15,26 @@ export const OVERLAY_DEFAULTS = {
 }
 
 export const DEFAULT_SYSTEM_PROMPT = `You are a real-time AI copilot for meetings, interviews, and work sessions.
-You have access to what's on the user's screen and what's being said.
+You can use the user's screen content, transcript, and question as context.
 
-Rules:
-- Answer ONLY what is asked. Be direct and concise.
-- Do NOT add unnecessary explanations or filler.
-- For MCQs: give only the correct answer letter/option. Do not rewrite the question.
-- For coding questions: give optimal code, a 2-line explanation, and time/space complexity.
-- For behavioral/situational questions: give a structured response in 2-3 sentences.
-- For technical questions: give a clear, accurate answer in 2-4 sentences.
-- Format for quick reading: short paragraphs and bullet points.
-- Never reveal you are an AI assistant unless directly asked.`
+Core rules:
+- Answer only the latest user request. Be direct, useful, and concise.
+- Do not restate the question unless it is needed for clarity.
+- Do not add filler, disclaimers, meta-commentary, or unnecessary explanation.
+- If the answer cannot be determined from the available context, say what is missing in one short sentence.
+- Never reveal you are an AI assistant unless directly asked.
+
+Answer formats:
+- Multiple-choice questions: return only the correct letter/option. No explanation.
+- "Code only" requests: return only code. No prose, markdown, or explanation.
+- Coding questions: provide the complete solution code first, then exactly 2 lines explaining the code.
+- Technical questions: answer clearly in 2-4 concise sentences.
+- Behavioral or situational questions: give a polished 2-3 sentence response.
+- Open-ended work questions: use short paragraphs or bullets for quick reading.
+
+Priority:
+- Follow explicit user formatting instructions over the defaults above.
+- Prefer the most recent visible question or spoken request when context contains multiple topics.`
 
 export const DEFAULT_HOTKEYS = {
   askAI: 'CommandOrControl+Return',
@@ -87,8 +96,12 @@ export const DEFAULT_MODELS = [
 ]
 
 export const DEFAULT_SETTINGS = {
+  aiProvider: 'openrouter' as 'openrouter' | 'openai' | 'codex',
   openrouterApiKey: '',
   selectedModel: 'google/gemini-3-flash-preview',
+  openaiApiKey: '',
+  openaiModel: 'gpt-5.5',
+  codexModel: 'gpt-5.4',
   overlayOpacity: 0.85,
   overlayPosition: { x: -1, y: -1 }, // -1 means auto-position
   overlaySize: { width: 420, height: 600 },
@@ -112,6 +125,10 @@ export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 export const OPENROUTER_KEYS_URL = 'https://openrouter.ai/keys'
 export const OPENROUTER_REFERER = 'https://github.com/umairinayat/Specter-AI'
 export const OPENROUTER_TITLE = 'Specter AI'
+
+export const OPENAI_API_BASE_URL = 'https://api.openai.com/v1'
+export const OPENAI_API_KEYS_URL = 'https://platform.openai.com/api-keys'
+export const OPENAI_API_PRICING_URL = 'https://developers.openai.com/api/docs/pricing'
 
 export const CHATGPT_CODEX_URL = 'https://chatgpt.com/codex'
 export const CHATGPT_PRICING_URL = 'https://chatgpt.com/pricing'

@@ -11,7 +11,7 @@ import type { UserSettings, Conversation } from '../shared/types'
 //   macOS → Keychain
 //   Windows → DPAPI (tied to user account)
 //   Linux → libsecret / gnome-keyring
-const SENSITIVE_KEYS = new Set(['openrouterApiKey', 'whisperApiKey'])
+const SENSITIVE_KEYS = new Set(['openrouterApiKey', 'openaiApiKey', 'whisperApiKey'])
 
 function encryptSensitive(value: string): string {
   if (!value) return ''
@@ -44,9 +44,13 @@ function decryptSensitive(stored: string): string {
 // --- Settings value validation ---
 
 const SETTINGS_KEY_VALIDATORS: Record<string, (value: unknown) => boolean> = {
+  aiProvider: (v) => typeof v === 'string' && ['openrouter', 'openai', 'codex'].includes(v),
   openrouterApiKey: (v) => typeof v === 'string' && v.length <= 500,
+  openaiApiKey: (v) => typeof v === 'string' && v.length <= 500,
   whisperApiKey: (v) => typeof v === 'string' && v.length <= 500,
   selectedModel: (v) => typeof v === 'string' && v.length <= 200 && /^[a-zA-Z0-9/_.:@-]+$/.test(v),
+  openaiModel: (v) => typeof v === 'string' && v.length <= 100 && /^[a-zA-Z0-9_.:-]+$/.test(v),
+  codexModel: (v) => typeof v === 'string' && v.length <= 100 && /^[a-zA-Z0-9_.:-]+$/.test(v),
   overlayOpacity: (v) => typeof v === 'number' && v >= 0.3 && v <= 1.0,
   overlayPosition: (v) =>
     typeof v === 'object' && v !== null &&
@@ -97,7 +101,19 @@ const STALE_DEFAULT_PROMPTS = [
 You have access to what's on their screen and what's being said.
 Give concise, immediately actionable responses.
 Format responses for quick reading: use short paragraphs and bullet points.
-Never reveal that you are an AI assistant unless directly asked.`
+Never reveal that you are an AI assistant unless directly asked.`,
+  `You are a real-time AI copilot for meetings, interviews, and work sessions.
+You have access to what's on the user's screen and what's being said.
+
+Rules:
+- Answer ONLY what is asked. Be direct and concise.
+- Do NOT add unnecessary explanations or filler.
+- For MCQs: give only the correct answer letter/option. Do not rewrite the question.
+- For coding questions: give optimal code, a 2-line explanation, and time/space complexity.
+- For behavioral/situational questions: give a structured response in 2-3 sentences.
+- For technical questions: give a clear, accurate answer in 2-4 sentences.
+- Format for quick reading: short paragraphs and bullet points.
+- Never reveal you are an AI assistant unless directly asked.`
 ]
 
 /**
@@ -116,8 +132,12 @@ function migrateSettings(s: Store<Record<string, unknown>>): void {
 // --- electron-store setup ---
 
 const schema = {
+  aiProvider: { type: 'string' as const, default: DEFAULT_SETTINGS.aiProvider },
   openrouterApiKey: { type: 'string' as const, default: DEFAULT_SETTINGS.openrouterApiKey },
   selectedModel: { type: 'string' as const, default: DEFAULT_SETTINGS.selectedModel },
+  openaiApiKey: { type: 'string' as const, default: DEFAULT_SETTINGS.openaiApiKey },
+  openaiModel: { type: 'string' as const, default: DEFAULT_SETTINGS.openaiModel },
+  codexModel: { type: 'string' as const, default: DEFAULT_SETTINGS.codexModel },
   overlayOpacity: { type: 'number' as const, default: DEFAULT_SETTINGS.overlayOpacity, minimum: 0.3, maximum: 1.0 },
   overlayPosition: {
     type: 'object' as const,
@@ -235,8 +255,12 @@ export function setSetting(key: string, value: unknown): void {
 export function getAllSettings(): UserSettings {
   const s = getStore()
   return {
+    aiProvider: s.get('aiProvider') as UserSettings['aiProvider'],
     openrouterApiKey: decryptSensitive(s.get('openrouterApiKey') as string),
     selectedModel: s.get('selectedModel') as string,
+    openaiApiKey: decryptSensitive(s.get('openaiApiKey') as string),
+    openaiModel: s.get('openaiModel') as string,
+    codexModel: s.get('codexModel') as string,
     overlayOpacity: s.get('overlayOpacity') as number,
     overlayPosition: s.get('overlayPosition') as { x: number; y: number },
     overlaySize: s.get('overlaySize') as { width: number; height: number },

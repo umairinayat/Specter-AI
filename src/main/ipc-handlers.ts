@@ -3,6 +3,8 @@ import { ipcMain, BrowserWindow, app, shell } from 'electron'
 import { IPC_CHANNELS } from '../shared/ipc-channels'
 import { getSetting, setSetting, getAllSettings, getConversations, saveConversation, deleteConversation, clearConversations, isValidSetting } from '../services/store'
 import { streamCompletion, cancelStream, fetchAvailableModels, estimateCost, getCachedModels } from '../services/openrouter'
+import { streamOpenAICompletion, cancelOpenAIStream } from '../services/openai-api'
+import { streamCodexCompletion, cancelCodexStream } from '../services/codex'
 import { buildSystemPrompt, buildUserMessage, estimateTokens } from '../services/context-builder'
 import { captureScreenText, captureScreenOnly } from './screen-capture'
 import { transcribeAudio, getTranscript, checkWhisperConfig } from './audio-capture'
@@ -99,6 +101,15 @@ function checkRateLimit(channel: string): boolean {
 
 const CONVERSATION_ID_REGEX = /^[a-zA-Z0-9_-]{1,128}$/
 
+const OPENAI_MODEL_PRICING: Record<string, { prompt: string; completion: string }> = {
+  'gpt-5.5': { prompt: '0.000005', completion: '0.00003' },
+  'gpt-5.5-pro': { prompt: '0.00003', completion: '0.00018' },
+  'gpt-5.4': { prompt: '0.0000025', completion: '0.000015' },
+  'gpt-5.4-mini': { prompt: '0.00000075', completion: '0.0000045' },
+  'gpt-5.4-nano': { prompt: '0.0000002', completion: '0.00000125' },
+  'chat-latest': { prompt: '0.000005', completion: '0.00003' }
+}
+
 function isValidQuery(query: unknown): query is string {
   return typeof query === 'string' && query.length > 0 && query.length <= 50000
 }
@@ -157,13 +168,23 @@ export function registerIpcHandlers(overlayWindow: BrowserWindow): void {
       return
     }
 
-    const apiKey = getSetting<string>('openrouterApiKey')
-    if (!apiKey) {
+    const aiProvider = getSetting<'openrouter' | 'openai' | 'codex'>('aiProvider') || DEFAULT_SETTINGS.aiProvider
+    const openrouterApiKey = getSetting<string>('openrouterApiKey')
+    const openaiApiKey = getSetting<string>('openaiApiKey')
+    if (aiProvider === 'openrouter' && !openrouterApiKey) {
       event.sender.send(IPC_CHANNELS.AI_STREAM_ERROR, 'No API key configured. Open Settings to add your OpenRouter API key.')
       return
     }
+    if (aiProvider === 'openai' && !openaiApiKey) {
+      event.sender.send(IPC_CHANNELS.AI_STREAM_ERROR, 'No OpenAI API key configured. Open Settings to add your OpenAI API key.')
+      return
+    }
 
-    const model = getSetting<string>('selectedModel') || DEFAULT_SETTINGS.selectedModel
+    const model = aiProvider === 'codex'
+      ? getSetting<string>('codexModel') || DEFAULT_SETTINGS.codexModel
+      : aiProvider === 'openai'
+        ? getSetting<string>('openaiModel') || DEFAULT_SETTINGS.openaiModel
+      : getSetting<string>('selectedModel') || DEFAULT_SETTINGS.selectedModel
     const systemPrompt = getSetting<string>('systemPrompt')
 
     let screenText = ''
@@ -227,14 +248,8 @@ export function registerIpcHandlers(overlayWindow: BrowserWindow): void {
     const promptTokens = estimateTokens(messages.map(m => m.content).join(' '))
     let completionContent = ''
 
-    // Get model pricing for cost estimation — check defaults first, then cached API models
-    const modelInfo = DEFAULT_MODELS.find(m => m.id === model)
-      || getCachedModels().find(m => m.id === model)
-    const promptPrice = modelInfo?.pricing?.prompt || '0'
-    const completionPrice = modelInfo?.pricing?.completion || '0'
-
-    await streamCompletion(messages, model, apiKey, {
-      onChunk: (content) => {
+    const streamCallbacks = {
+      onChunk: (content: string) => {
         completionContent += content
         if (!event.sender.isDestroyed()) {
           event.sender.send(IPC_CHANNELS.AI_STREAM_CHUNK, content)
@@ -244,27 +259,47 @@ export function registerIpcHandlers(overlayWindow: BrowserWindow): void {
         if (!event.sender.isDestroyed()) {
           const completionTokens = estimateTokens(completionContent)
           const totalTokens = promptTokens + completionTokens
-          const totalCost = estimateCost(promptTokens, completionTokens, promptPrice, completionPrice)
+          const modelLabel = aiProvider === 'codex' ? `codex/${model}` : aiProvider === 'openai' ? `openai/${model}` : model
+          const modelInfo = aiProvider === 'openrouter'
+            ? DEFAULT_MODELS.find(m => m.id === model) || getCachedModels().find(m => m.id === model)
+            : aiProvider === 'openai'
+              ? { pricing: OPENAI_MODEL_PRICING[model] }
+              : undefined
+          const promptPrice = modelInfo?.pricing?.prompt || '0'
+          const completionPrice = modelInfo?.pricing?.completion || '0'
+          const totalCost = aiProvider === 'codex'
+            ? 0
+            : estimateCost(promptTokens, completionTokens, promptPrice, completionPrice)
           event.sender.send(IPC_CHANNELS.AI_STREAM_DONE, {
             promptTokens,
             completionTokens,
             totalTokens,
             totalCost,
-            model
+            model: modelLabel
           })
         }
       },
-      onError: (error) => {
+      onError: (error: string) => {
         if (!event.sender.isDestroyed()) {
           event.sender.send(IPC_CHANNELS.AI_STREAM_ERROR, error)
         }
       }
-    })
+    }
+
+    if (aiProvider === 'codex') {
+      await streamCodexCompletion(messages, model, streamCallbacks)
+    } else if (aiProvider === 'openai') {
+      await streamOpenAICompletion(messages, model, openaiApiKey, streamCallbacks)
+    } else {
+      await streamCompletion(messages, model, openrouterApiKey, streamCallbacks)
+    }
   })
 
   // Cancel AI stream
   ipcMain.on(IPC_CHANNELS.AI_CANCEL, () => {
     cancelStream()
+    cancelOpenAIStream()
+    cancelCodexStream()
   })
 
   // Screen capture (with OCR)
