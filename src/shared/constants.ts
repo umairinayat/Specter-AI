@@ -2,7 +2,7 @@
 
 export const APP_NAME = 'Specter AI'
 export const APP_ID = 'com.specter.ai'
-export const APP_VERSION = '1.4.0'
+export const APP_VERSION = '1.5.0'
 
 export const ACCENT_COLOR = '#7C3AED' // violet
 export const ACCENT_COLOR_RGB = '124, 58, 237'

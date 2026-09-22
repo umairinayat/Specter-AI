@@ -2,6 +2,14 @@
 
 All notable changes to Specter AI are documented in this file.
 
+## [1.5.0] - 2026-09-22
+
+### Added
+- Interview Profile (Dashboard > Interview): company + role, job description paste (20k chars), CV/resume paste or PDF/TXT upload, Interview Mode toggle, voice auto-answer toggle. Includes JD↔CV keyword match preview so you can see grounding coverage before the call
+- Voice auto-answer: while the overlay mic is recording, each transcribed chunk is checked for interview questions and answered automatically in first person from your CV, mirroring JD language. 8s cooldown + duplicate detection, garbled audio returns "No question detected." Overlay status bar shows interview target, listening state, and last heard question
+- JD/CV-grounded prompts: job description + resume are injected ahead of screen/transcript context (system prompt + user message) whenever Interview Mode is on; answers never invent jobs, dates, or skills not on the resume
+- Regression tests for question detection, last-question extraction, and JD/CV grounding order
+
 ## [1.4.0] - 2026-08-27
 
 ### Added
