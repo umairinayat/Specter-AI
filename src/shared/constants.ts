@@ -120,7 +120,14 @@ export const DEFAULT_SETTINGS = {
   autoHideDelay: 0,          // seconds, 0 = disabled
   smartCrop: false,           // capture active window only (vs full screen)
   // Onboarding
-  onboardingComplete: false
+  onboardingComplete: false,
+  // Interview profile — JD + CV grounding
+  interviewCompany: '',
+  interviewRole: '',
+  jobDescription: '',
+  resumeText: '',
+  interviewMode: false,
+  autoAnswer: false
 }
 
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'

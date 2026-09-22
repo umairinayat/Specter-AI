@@ -32,6 +32,13 @@ export interface UserSettings {
   smartCrop: boolean    // capture active window only (vs full screen)
   // Onboarding
   onboardingComplete: boolean
+  // Interview profile — JD + CV grounding (Parakeet-style)
+  interviewCompany: string
+  interviewRole: string
+  jobDescription: string
+  resumeText: string
+  interviewMode: boolean
+  autoAnswer: boolean
 }
 
 export interface OpenRouterModel {
@@ -68,6 +75,12 @@ export interface ContextSnapshot {
   transcript: string
   userQuery?: string
   screenshot?: string // base64
+  // Interview grounding (optional — injected when interviewMode is on)
+  interviewCompany?: string
+  interviewRole?: string
+  jobDescription?: string
+  resumeText?: string
+  interviewMode?: boolean
 }
 
 export interface AudioStatus {

@@ -78,7 +78,13 @@ const SETTINGS_KEY_VALIDATORS: Record<string, (value: unknown) => boolean> = {
   whisperModel: (v) => typeof v === 'string' && v.length <= 200,
   autoHideDelay: (v) => typeof v === 'number' && v >= 0 && v <= 300,
   smartCrop: (v) => typeof v === 'boolean',
-  onboardingComplete: (v) => typeof v === 'boolean'
+  onboardingComplete: (v) => typeof v === 'boolean',
+  interviewCompany: (v) => typeof v === 'string' && v.length <= 500,
+  interviewRole: (v) => typeof v === 'string' && v.length <= 500,
+  jobDescription: (v) => typeof v === 'string' && v.length <= 20000,
+  resumeText: (v) => typeof v === 'string' && v.length <= 20000,
+  interviewMode: (v) => typeof v === 'boolean',
+  autoAnswer: (v) => typeof v === 'boolean'
 }
 
 /** Returns the set of allowed settings keys */
@@ -174,7 +180,13 @@ const schema = {
   whisperModel: { type: 'string' as const, default: DEFAULT_SETTINGS.whisperModel },
   autoHideDelay: { type: 'number' as const, default: DEFAULT_SETTINGS.autoHideDelay },
   smartCrop: { type: 'boolean' as const, default: DEFAULT_SETTINGS.smartCrop },
-  onboardingComplete: { type: 'boolean' as const, default: DEFAULT_SETTINGS.onboardingComplete }
+  onboardingComplete: { type: 'boolean' as const, default: DEFAULT_SETTINGS.onboardingComplete },
+  interviewCompany: { type: 'string' as const, default: DEFAULT_SETTINGS.interviewCompany },
+  interviewRole: { type: 'string' as const, default: DEFAULT_SETTINGS.interviewRole },
+  jobDescription: { type: 'string' as const, default: DEFAULT_SETTINGS.jobDescription },
+  resumeText: { type: 'string' as const, default: DEFAULT_SETTINGS.resumeText },
+  interviewMode: { type: 'boolean' as const, default: DEFAULT_SETTINGS.interviewMode },
+  autoAnswer: { type: 'boolean' as const, default: DEFAULT_SETTINGS.autoAnswer }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -279,7 +291,13 @@ export function getAllSettings(): UserSettings {
     whisperModel: s.get('whisperModel') as string,
     autoHideDelay: s.get('autoHideDelay') as number,
     smartCrop: s.get('smartCrop') as boolean,
-    onboardingComplete: s.get('onboardingComplete') as boolean
+    onboardingComplete: s.get('onboardingComplete') as boolean,
+    interviewCompany: (s.get('interviewCompany') as string) || '',
+    interviewRole: (s.get('interviewRole') as string) || '',
+    jobDescription: (s.get('jobDescription') as string) || '',
+    resumeText: (s.get('resumeText') as string) || '',
+    interviewMode: (s.get('interviewMode') as boolean) || false,
+    autoAnswer: (s.get('autoAnswer') as boolean) || false
   }
 }
 

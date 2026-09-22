@@ -1,11 +1,12 @@
 // Dashboard App — Settings and configuration UI for Specter AI
 import { useState, useEffect } from 'react'
-import { Settings as SettingsIcon, Cpu, BookOpen, MessageSquare, Ghost, Zap } from 'lucide-react'
+import { Settings as SettingsIcon, Cpu, BookOpen, MessageSquare, Ghost, Zap, Briefcase } from 'lucide-react'
 import { APP_VERSION } from '../../shared/constants'
 import SettingsPage from './pages/Settings'
 import ModelsPage from './pages/Models'
 import PlaybooksPage from './pages/Playbooks'
 import HistoryPage from './pages/History'
+import InterviewPage from './pages/Interview'
 
 declare global {
   interface Window {
@@ -13,9 +14,10 @@ declare global {
   }
 }
 
-type Page = 'settings' | 'models' | 'playbooks' | 'history'
+type Page = 'settings' | 'models' | 'playbooks' | 'history' | 'interview'
 
 const NAV_ITEMS: Array<{ id: Page; label: string; icon: typeof SettingsIcon }> = [
+  { id: 'interview', label: 'Interview', icon: Briefcase },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
   { id: 'models', label: 'Models', icon: Cpu },
   { id: 'playbooks', label: 'Playbooks', icon: BookOpen },
@@ -84,6 +86,7 @@ export default function App() {
       {/* Main content */}
       <main className="dashboard-content flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-8 py-8">
+          {activePage === 'interview' && <InterviewPage />}
           {activePage === 'settings' && <SettingsPage />}
           {activePage === 'models' && <ModelsPage />}
           {activePage === 'playbooks' && <PlaybooksPage />}

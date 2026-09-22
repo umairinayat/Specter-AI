@@ -254,20 +254,42 @@ export function registerIpcHandlers(overlayWindow: BrowserWindow): void {
         .join('\n\n')
     }
 
+    // Interview grounding — JD + CV (only when interviewMode is on)
+    const interviewMode = getSetting<boolean>('interviewMode') || false
+    const interviewCompany = (getSetting<string>('interviewCompany') || '').slice(0, 500)
+    const interviewRole = (getSetting<string>('interviewRole') || '').slice(0, 500)
+    const jobDescription = (getSetting<string>('jobDescription') || '').slice(0, 20000)
+    const resumeText = (getSetting<string>('resumeText') || '').slice(0, 20000)
+    const hasInterviewProfile = interviewMode && !!(interviewCompany || interviewRole || jobDescription || resumeText)
+
     const userMessage = buildUserMessage({
       screenText,
       transcript,
       userQuery: args.query,
-      screenshot
+      screenshot,
+      interviewCompany: hasInterviewProfile ? interviewCompany : undefined,
+      interviewRole: hasInterviewProfile ? interviewRole : undefined,
+      jobDescription: hasInterviewProfile ? jobDescription : undefined,
+      resumeText: hasInterviewProfile ? resumeText : undefined,
+      interviewMode: hasInterviewProfile
     })
 
     const fullUserMessage = playbookContext
       ? `${playbookContext}\n\n${userMessage}`
       : userMessage
 
-    // Build messages array: system prompt + conversation history + new user message
+    // Build messages array: system prompt (+ interview grounding) + history + new message
     const messages: ChatMessage[] = [
-      { role: 'system', content: buildSystemPrompt(systemPrompt) }
+      {
+        role: 'system',
+        content: buildSystemPrompt(systemPrompt, {
+          company: interviewCompany,
+          role: interviewRole,
+          jobDescription,
+          resumeText,
+          interviewMode: hasInterviewProfile
+        })
+      }
     ]
 
     // Add conversation history (last 10 messages max to stay within context limits)

@@ -4,9 +4,10 @@ import ResponseCard from './ResponseCard'
 import TranscriptBar from './TranscriptBar'
 import MeetingRecorder from './MeetingRecorder'
 import UpdateToast from './UpdateToast'
-import { Send, Mic, MicOff, Monitor, Settings, GripVertical, Minimize2, Maximize2, X, ScanSearch, Paperclip, Trash2, Clock, ChevronLeft, MessageSquare, Power } from 'lucide-react'
+import { Send, Mic, MicOff, Monitor, Settings, GripVertical, Minimize2, Maximize2, X, ScanSearch, Paperclip, Trash2, Clock, ChevronLeft, MessageSquare, Power, Zap } from 'lucide-react'
 import type { StreamDoneData } from '../../preload/index'
 import type { Message, Conversation } from '../../shared/types'
+import { extractLastQuestion } from '../../services/context-builder'
 
 declare global {
   interface Window {
@@ -50,6 +51,10 @@ export default function App() {
   const [historyList, setHistoryList] = useState<Conversation[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [meetingActive, setMeetingActive] = useState(false) // MeetingRecorder session in progress
+  const [autoAnswer, setAutoAnswer] = useState(false)
+  const [interviewMode, setInterviewMode] = useState(false)
+  const [interviewLabel, setInterviewLabel] = useState('')
+  const [lastHeardQuestion, setLastHeardQuestion] = useState('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -65,6 +70,10 @@ export default function App() {
   const includeScreenRef = useRef(includeScreen)
   const messagesRef = useRef(messages)
   const selectedModelRef = useRef(selectedModel)
+  const autoAnswerRef = useRef(autoAnswer)
+  const interviewModeRef = useRef(interviewMode)
+  const lastAnsweredRef = useRef('')
+  const lastAutoAnswerAtRef = useRef(0)
 
   // Keep refs in sync with state
   queryRef.current = query
@@ -73,6 +82,8 @@ export default function App() {
   includeScreenRef.current = includeScreen
   messagesRef.current = messages
   selectedModelRef.current = selectedModel
+  autoAnswerRef.current = autoAnswer
+  interviewModeRef.current = interviewMode
 
   // Pending cost data for the current stream
   const pendingCostRef = useRef<StreamDoneData | null>(null)
@@ -107,6 +118,22 @@ export default function App() {
     window.specterAPI?.getSetting<number>('autoHideDelay').then((d) => {
       if (typeof d === 'number' && d >= 0) setAutoHideDelay(d)
     })
+    // Interview profile — drives voice auto-answer grounding indicator
+    const loadInterview = () => {
+      window.specterAPI?.getSetting<boolean>('autoAnswer').then((v) => setAutoAnswer(!!v)).catch(() => {})
+      window.specterAPI?.getSetting<boolean>('interviewMode').then((v) => setInterviewMode(!!v)).catch(() => {})
+      Promise.all([
+        window.specterAPI?.getSetting<string>('interviewRole').catch(() => ''),
+        window.specterAPI?.getSetting<string>('interviewCompany').catch(() => '')
+      ]).then(([role, company]) => {
+        const label = [role, company].filter(Boolean).join(' at ')
+        setInterviewLabel(label || '')
+      }).catch(() => {})
+    }
+    loadInterview()
+    // Refresh when overlay regains focus (profile may have changed in dashboard)
+    window.addEventListener('focus', loadInterview)
+    return () => window.removeEventListener('focus', loadInterview)
   }, [])
 
   // Keep data-theme in sync when theme changes
@@ -193,7 +220,10 @@ export default function App() {
   /**
    * Send a complete audio Blob to the main process for Whisper transcription.
    * Each blob must be a self-contained valid media file (has proper headers).
+   * When voice auto-answer is on, question-like chunks trigger an automatic
+   * grounded answer (JD + CV) via autoSubmitRef.
    */
+  const autoSubmitRef = useRef<((question: string, heard: string) => void) | null>(null)
   const sendBlobForTranscription = useCallback(async (blob: Blob) => {
     // Skip very small blobs (< 1KB — likely silence/empty)
     if (blob.size < 1024) return
@@ -212,6 +242,29 @@ export default function App() {
         })
         // Clear any previous audio error on success
         setAudioError(null)
+
+        // Voice auto-answer: detect a question in this chunk and answer it.
+        // Guards: auto-answer on, not already streaming, cooldown + dedupe.
+        try {
+          if (autoAnswerRef.current && !isStreamingRef.current) {
+            const question = extractLastQuestion(text)
+            if (question) {
+              const normalized = question.toLowerCase().replace(/\s+/g, ' ').trim()
+              const lastNormalized = lastAnsweredRef.current.toLowerCase().replace(/\s+/g, ' ').trim()
+              const now = Date.now()
+              const isDuplicate = normalized === lastNormalized ||
+                (lastNormalized && (normalized.includes(lastNormalized) || lastNormalized.includes(normalized)))
+              if (!isDuplicate && now - lastAutoAnswerAtRef.current > 8000) {
+                lastAnsweredRef.current = question
+                lastAutoAnswerAtRef.current = now
+                setLastHeardQuestion(question)
+                autoSubmitRef.current?.(question, text.trim())
+              }
+            }
+          }
+        } catch {
+          // Auto-answer detection must never break transcription display
+        }
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Transcription failed'
@@ -510,6 +563,57 @@ export default function App() {
       history
     )
   }, [getMessageHistory])
+
+  /**
+   * Voice auto-answer — called automatically when a question is heard while recording.
+   * Grounded in JD + CV via main-process interview profile (see ipc-handlers).
+   * Always includes screen so on-screen questions and voice questions are both covered.
+   */
+  const submitLiveQuestion = useCallback((question: string, heard: string) => {
+    if (isStreamingRef.current) return
+    if (!question.trim()) return
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: `🎙️ Heard: "${question}"`,
+      timestamp: Date.now()
+    }
+
+    const history = getMessageHistory()
+
+    setMessages((prev) => [...prev, userMessage])
+    setQuery('')
+    setError(null)
+    setIsStreaming(true)
+    setStreamingContent('')
+    pendingCostRef.current = null
+
+    const framedQuery = [
+      `LIVE INTERVIEW QUESTION (heard via microphone): "${question}"`,
+      heard && heard !== question ? `FULL HEARD SEGMENT: "${heard.slice(0, 800)}"` : '',
+      '',
+      'INSTRUCTIONS:',
+      '- This question was SPOKEN — answer it directly as the candidate in first person.',
+      '- Ground the answer in [MY RESUME] and mirror [JOB DESCRIPTION] language (injected via system context).',
+      '- Use only real experience from the resume. Never invent jobs, dates, or skills.',
+      '- Look at screen content too if present — if the screen shows the same or another question, prefer the spoken one above.',
+      '- If the heard text is garbled with no clear question, respond ONLY with: "No question detected."',
+      '- Keep it speakable: concise, no meta-commentary, follow system prompt format rules.'
+    ].filter(Boolean).join('\n')
+
+    window.specterAPI?.queryAI(
+      framedQuery,
+      true, // include screen — on-screen code/MCQ may accompany the spoken question
+      true, // include rolling transcript for extra conversational context
+      history
+    )
+  }, [getMessageHistory])
+
+  // Keep auto-submit ref in sync so the transcription callback always calls the latest version
+  useEffect(() => {
+    autoSubmitRef.current = submitLiveQuestion
+  }, [submitLiveQuestion])
 
   /**
    * Attach a screenshot to the next message (preview it first).
@@ -820,6 +924,47 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {/* Interview / auto-answer status bar */}
+      {(interviewMode || autoAnswer || isRecording) && !showHistory && (
+        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-white/5 bg-white/[0.015]">
+          {interviewMode && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2 py-0.5">
+              <Zap className="w-2.5 h-2.5" />
+              Interview{interviewLabel ? `: ${interviewLabel.slice(0, 40)}` : ''}
+            </span>
+          )}
+          {isRecording && autoAnswer ? (
+            <span className="flex items-center gap-1 text-[10px] text-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Listening for questions…
+            </span>
+          ) : isRecording ? (
+            <span className="flex items-center gap-1 text-[10px] text-white/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+              Recording — auto-answer off
+            </span>
+          ) : autoAnswer ? (
+            <span className="text-[10px] text-white/30">Auto-answer on — start mic to listen</span>
+          ) : null}
+          {lastHeardQuestion && (
+            <span className="text-[10px] text-white/20 truncate flex-1 text-right" title={lastHeardQuestion}>
+              Last heard: {lastHeardQuestion.slice(0, 60)}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              const next = !autoAnswer
+              setAutoAnswer(next)
+              window.specterAPI?.setSetting('autoAnswer', next).catch(() => {})
+            }}
+            className="text-[10px] text-white/30 hover:text-white/60 underline underline-offset-2 shrink-0"
+            title="Toggle voice auto-answer"
+          >
+            {autoAnswer ? 'Mute auto' : 'Auto'}
+          </button>
+        </div>
+      )}
 
       {/* History drawer — slides over the messages area */}
       {showHistory && (
