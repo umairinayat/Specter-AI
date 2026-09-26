@@ -1,0 +1,6 @@
+interface:
+  display_name: "Specter AI"
+  short_description: "Repo-specific patterns and workflows for Specter-AI"
+  default_prompt: "Use the Specter-AI repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
